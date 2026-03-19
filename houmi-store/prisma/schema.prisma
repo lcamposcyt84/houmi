@@ -1,0 +1,572 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Category {
+  id        String    @id @default(cuid())
+  name      String
+  slug      String    @unique
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  products  Product[]
+}
+
+model Product {
+  id            String    @id @default(cuid())
+  code          String    @unique
+  name          String
+  slug          String    @unique
+  description   String?
+  images        String    // JSON array stored as string (legacy, keep for compat)
+  brand         String?
+  weight        Float?    // kg - for shipping calc
+  dimensions    String?   // JSON: {"largo": 10, "ancho": 5, "alto": 3}
+  tags          String?   // JSON array of tags
+  metaTitle     String?   // SEO
+  metaDesc      String?   // SEO
+  isActive      Boolean   @default(true)
+  categoryId    String
+  category      Category  @relation(fields: [categoryId], references: [id])
+  inventory     Inventory?
+  pricing       Pricing?
+  productImages ProductImage[]
+  variants      ProductVariant[]
+  reviews       Review[]
+  wishlistItems WishlistItem[]
+  cartItems     CartItem[]
+  averageRating Float?    @default(0)
+  totalReviews  Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([categoryId])
+  @@index([isActive])
+}
+
+model Inventory {
+  id        String   @id @default(cuid())
+  productId String   @unique
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  stock     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Pricing {
+  id        String   @id @default(cuid())
+  productId String   @unique
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  priceUsd  Float    @default(0)
+  priceVes  Float?   // Optional manual override
+  manualVes Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Settings {
+  id                   String   @id @default("main")
+  exchangeRateUsdToVes Float    @default(40.0)
+  storeName            String   @default("Houmi Store")
+  storeDescription     String?
+  whatsappNumber       String?  // Número de WhatsApp para contacto
+  // Configuración Banco Mercantil
+  mercantilApiUrl      String?  // URL base de la API del banco (sin barra final)
+  mercantilApiPath     String?  // Ruta del endpoint C2P (ej. /api o vacío para POST a la base)
+  mercantilApiKey      String?  // API Key para llamadas a la API del banco (C2P, débito)
+  mercantilApiSecret   String?  // API Secret para autenticación
+  mercantilMasterKey   String?  // Clave maestra para descifrado RSA (webhook)
+  mercantilIdComercio  String?  // ID del comercio (ej: J000000406848786)
+  mercantilWebhookUrl  String?  // URL del webhook configurada en el banco
+  updatedAt            DateTime @updatedAt
+}
+
+// Modelo para almacenar notificaciones de pago del Banco Mercantil
+model PaymentNotification {
+  id                    String   @id @default(cuid())
+  saleId                String?
+  sale                  Sale?    @relation(fields: [saleId], references: [id], onDelete: SetNull)
+  // Datos del webhook
+  guid                  String?  // guId del mensaje
+  channel               String?   // Canal de origen
+  subchannel            String?   // Subcanal
+  codigo                String?   // Código de estado (00 = aprobado)
+  mensajeCliente        String?
+  mensajeSistema        String?
+  referenciaBancoOrdenante String?
+  referenciaBancoBeneficiario String?
+  tipo                  String?   // "R" = recibido, "E" = enviado
+  bancoOrdenante        String?
+  bancoBeneficiario     String?
+  idCliente             String?
+  numeroProductoCliente String?
+  idComercio            String?
+  numeroProductoComercio String?
+  fecha                 String?   // YYYYMMDD
+  hora                  String?   // HHMM
+  codigoMoneda          String?
+  monto                 String?   // Monto en formato string
+  numeroFactura         String?
+  numeroContrato        String?
+  concepto              String?
+  idRegistro            String?   // ID de registro del banco
+  // Datos raw para debugging
+  rawData               String?   // JSON string del mensaje completo
+  createdAt             DateTime  @default(now())
+  
+  @@index([saleId])
+  @@index([codigo])
+  @@index([createdAt])
+}
+
+// Modelo para registrar ventas
+model Sale {
+  id                 String     @id @default(cuid())
+  orderNumber        String     @unique
+  customerId         String?    // 🆕 Optional to support guest checkout
+  customer           Customer?  @relation(fields: [customerId], references: [id])
+  customerName       String
+  customerEmail      String?
+  customerPhone      String?
+  customerAddress    String?
+  totalUsd           Float
+  totalVes           Float
+  discountUsd        Float      @default(0) // 🆕
+  shippingUsd        Float      @default(0) // 🆕
+  taxUsd             Float      @default(0) // 🆕
+  status             String     @default("pending") // pending, payment_pending, payment_processing, paid, completed, cancelled
+  // Campos de pago Banco Mercantil
+  paymentMethod      String?  // "debit_card", "c2p", "p2c", "manual"
+  paymentStatus      String?  @default("pending") // pending, processing, approved, rejected, failed
+  bankReference      String?  @unique // referenciaBancoOrdenante - UNIQUE para idempotencia
+  bankBeneficiaryRef String? // referenciaBancoBeneficiario
+  transactionType    String? // "R" = recibido, "E" = enviado
+  paymentDate        DateTime?
+  paymentConfirmedAt DateTime? // Timestamp de confirmación bancaria
+  notes              String?    // 🆕
+  items              SaleItem[]
+  paymentNotifications PaymentNotification[]
+  webhookLogs        PaymentWebhookLog[]
+  shipments          Shipment[] // 🆕
+  returns            Return[]   // 🆕
+  couponUsages       CouponUsage[] // 🆕
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+  
+  @@index([bankReference])
+  @@index([status])
+  @@index([paymentStatus])
+  @@index([customerId])
+}
+
+// Modelo para administradores con autenticación segura
+model Admin {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  password    String   // Hasheado con bcrypt
+  name        String?
+  role        String   @default("admin") // admin, superadmin
+  permissions String?  // 🆕 JSON array: ["manage_products", "manage_orders", ...]
+  isActive    Boolean  @default(true)
+  lastLogin   DateTime?
+  auditLogs   AuditLog[] // 🆕
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([email])
+  @@index([isActive])
+}
+
+// Modelo para auditoría de webhooks bancarios
+model PaymentWebhookLog {
+  id                    String   @id @default(cuid())
+  saleId                String?
+  sale                  Sale?    @relation(fields: [saleId], references: [id], onDelete: SetNull)
+  
+  // Metadatos de seguridad
+  bankReference         String   // Para idempotencia
+  sourceIp              String?  // IP del request
+  requestTimestamp      DateTime // Timestamp del mensaje bancario
+  receivedAt            DateTime @default(now())
+  
+  // Datos del webhook (cifrados y descifrados)
+  encryptedPayload      String   // Payload original cifrado
+  decryptedPayload      String?  // Payload descifrado (JSON)
+  
+  // Estado del procesamiento
+  status                String   // success, failed, duplicate, invalid_signature, replay_attack
+  errorMessage          String?
+  
+  // Datos extraídos del webhook
+  guid                  String?
+  channel               String?
+  subchannel            String?
+  codigo                String?  // Código de estado bancario
+  mensajeCliente        String?
+  mensajeSistema        String?
+  referenciaBancoOrdenante String?
+  referenciaBancoBeneficiario String?
+  tipo                  String?
+  bancoOrdenante        String?
+  bancoBeneficiario     String?
+  idCliente             String?
+  numeroProductoCliente String?
+  idComercio            String?
+  numeroProductoComercio String?
+  fecha                 String?
+  hora                  String?
+  codigoMoneda          String?
+  monto                 String?
+  numeroFactura         String?
+  numeroContrato        String?
+  concepto              String?
+  
+  createdAt             DateTime  @default(now())
+  
+  @@index([bankReference])
+  @@index([saleId])
+  @@index([status])
+  @@index([receivedAt])
+  @@index([codigo])
+}
+
+model SaleItem {
+  id        String   @id @default(cuid())
+  saleId    String
+  sale      Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  productId String
+  productName String
+  productCode String
+  quantity  Int
+  priceUsd  Float
+  priceVes  Float
+  createdAt DateTime @default(now())
+
+  @@index([saleId])
+}
+
+// Modelo para registrar compras (inventario entrante)
+model Purchase {
+  id          String         @id @default(cuid())
+  supplier    String
+  description String?
+  totalUsd    Float
+  totalVes    Float?
+  status      String         @default("pending") // pending, received, cancelled
+  items       PurchaseItem[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+model PurchaseItem {
+  id         String   @id @default(cuid())
+  purchaseId String
+  purchase   Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  productId  String?
+  productName String
+  quantity   Int
+  costUsd    Float
+  createdAt  DateTime @default(now())
+
+  @@index([purchaseId])
+}
+
+// Modelo para registrar gastos operativos
+model Expense {
+  id          String   @id @default(cuid())
+  category    String   // rent, utilities, marketing, supplies, other
+  description String
+  amountUsd   Float
+  amountVes   Float?
+  date        DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ═══════════════════════════════════════════
+// 🆕 SISTEMA DE CLIENTES
+// ═══════════════════════════════════════════
+
+model Customer {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String    // Hasheado con bcrypt
+  firstName     String
+  lastName      String
+  phone         String?
+  avatar        String?
+  isActive      Boolean   @default(true)
+  emailVerified Boolean   @default(false)
+  lastLogin     DateTime?
+  addresses     Address[]
+  orders        Sale[]
+  reviews       Review[]
+  wishlist      WishlistItem[]
+  cart          CartItem[]
+  couponsUsed   CouponUsage[]
+  returns       Return[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Address {
+  id          String   @id @default(cuid())
+  customerId  String
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  label       String   @default("Casa") // Casa, Oficina, etc.
+  fullName    String
+  phone       String
+  address     String
+  city        String
+  state       String
+  zipCode     String?
+  country     String   @default("VE")
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([customerId])
+}
+
+// ═══════════════════════════════════════════
+// 🆕 VARIANTES DE PRODUCTO
+// ═══════════════════════════════════════════
+
+model ProductVariant {
+  id          String   @id @default(cuid())
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sku         String   @unique
+  name        String   // "Rojo - XL", "128GB Negro"
+  attributes  String   // JSON: {"color": "rojo", "talla": "XL"}
+  priceUsd    Float?   // Override de precio (null = usa precio base)
+  stock       Int      @default(0)
+  images      String?  // JSON array
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([productId])
+}
+
+model ProductImage {
+  id         String   @id @default(cuid())
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url        String
+  alt        String?
+  sortOrder  Int      @default(0)
+  isPrimary  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@index([productId])
+}
+
+// ═══════════════════════════════════════════
+// 🆕 RESEÑAS
+// ═══════════════════════════════════════════
+
+model Review {
+  id          String   @id @default(cuid())
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  customerId  String
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  rating      Int      // 1-5
+  title       String?
+  comment     String?
+  isVerified  Boolean  @default(false) // Compra verificada
+  isApproved  Boolean  @default(false) // Aprobado por admin
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([productId, customerId])
+  @@index([productId])
+  @@index([customerId])
+}
+
+// ═══════════════════════════════════════════
+// 🆕 WISHLIST
+// ═══════════════════════════════════════════
+
+model WishlistItem {
+  id          String   @id @default(cuid())
+  customerId  String
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@unique([customerId, productId])
+}
+
+// ═══════════════════════════════════════════
+// 🆕 CUPONES Y DESCUENTOS
+// ═══════════════════════════════════════════
+
+model Coupon {
+  id              String   @id @default(cuid())
+  code            String   @unique
+  description     String?
+  discountType    String   // "percentage", "fixed_usd", "fixed_ves"
+  discountValue   Float
+  minPurchaseUsd  Float?
+  maxDiscountUsd  Float?
+  maxUses         Int?
+  currentUses     Int      @default(0)
+  isActive        Boolean  @default(true)
+  startsAt        DateTime?
+  expiresAt       DateTime?
+  categoryId      String?  // Aplica solo a categoría específica
+  usages          CouponUsage[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model CouponUsage {
+  id          String   @id @default(cuid())
+  couponId    String
+  coupon      Coupon   @relation(fields: [couponId], references: [id])
+  customerId  String
+  customer    Customer @relation(fields: [customerId], references: [id])
+  saleId      String
+  sale        Sale     @relation(fields: [saleId], references: [id])
+  discountUsd Float
+  createdAt   DateTime @default(now())
+
+  @@unique([couponId, saleId])
+  @@index([customerId])
+}
+
+// ═══════════════════════════════════════════
+// 🆕 CARRITO PERSISTENTE (SERVER-SIDE)
+// ═══════════════════════════════════════════
+
+model CartItem {
+  id          String   @id @default(cuid())
+  customerId  String
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity    Int      @default(1)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([customerId, productId])
+  @@index([customerId])
+  @@index([productId])
+}
+
+// ═══════════════════════════════════════════
+// 🆕 ENVÍOS
+// ═══════════════════════════════════════════
+
+model ShippingZone {
+  id            String   @id @default(cuid())
+  name          String   // "Caracas", "Interior", "Internacional"
+  states        String   // JSON array de estados
+  baseCostUsd   Float
+  freeAboveUsd  Float?  // Envío gratis arriba de X USD
+  estimatedDays String   @default("3-5 días")
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Shipment {
+  id              String   @id @default(cuid())
+  saleId          String
+  sale            Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  carrier         String?  // "MRW", "ZOOM", "DHL"
+  trackingNumber  String?
+  trackingUrl     String?
+  status          String   @default("pending") // pending, shipped, in_transit, delivered
+  shippedAt       DateTime?
+  deliveredAt     DateTime?
+  costUsd         Float    @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([saleId])
+  @@index([trackingNumber])
+}
+
+// ═══════════════════════════════════════════
+// 🆕 DEVOLUCIONES
+// ═══════════════════════════════════════════
+
+model Return {
+  id          String   @id @default(cuid())
+  saleId      String
+  sale        Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  customerId  String
+  customer    Customer @relation(fields: [customerId], references: [id])
+  reason      String   // "defective", "wrong_item", "not_as_described", "changed_mind"
+  description String?
+  status      String   @default("requested") // requested, approved, rejected, refunded
+  refundUsd   Float?
+  items       ReturnItem[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([saleId])
+  @@index([customerId])
+}
+
+model ReturnItem {
+  id          String  @id @default(cuid())
+  returnId    String
+  return      Return  @relation(fields: [returnId], references: [id], onDelete: Cascade)
+  productId   String
+  quantity    Int
+
+  @@index([returnId])
+}
+
+// ═══════════════════════════════════════════
+// 🆕 NOTIFICACIONES
+// ═══════════════════════════════════════════
+
+model Notification {
+  id          String   @id @default(cuid())
+  customerId  String?
+  type        String   // "order_confirmed", "order_shipped", "payment_approved", "promotion"
+  title       String
+  message     String
+  channel     String   @default("email") // "email", "whatsapp", "push", "sms"
+  isRead      Boolean  @default(false)
+  sentAt      DateTime?
+  metadata    String?  // JSON con datos adicionales
+  createdAt   DateTime @default(now())
+
+  @@index([customerId])
+  @@index([type])
+}
+
+// ═══════════════════════════════════════════
+// 🆕 AUDITORÍA Y LOGS
+// ═══════════════════════════════════════════
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  adminId     String?
+  admin       Admin?   @relation(fields: [adminId], references: [id], onDelete: SetNull)
+  action      String   // "product_created", "order_updated", "price_changed"
+  entity      String   // "product", "order", "settings"
+  entityId    String?
+  oldValue    String?  @db.Text // JSON del valor anterior
+  newValue    String?  @db.Text // JSON del nuevo valor
+  ipAddress   String?
+  createdAt   DateTime @default(now())
+
+  @@index([adminId])
+  @@index([entity, entityId])
+  @@index([createdAt])
+}

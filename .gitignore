@@ -1,0 +1,48 @@
+# Archivos de credenciales y sensibles
+Credencilaes.txt
+*.env
+.env.*
+!.env.example
+
+# Node modules
+node_modules/
+.pnp/
+.pnp.js
+
+# Next.js
+.next/
+out/
+
+# Archivos de Prisma
+*.db
+*.db-journal
+
+# Build outputs
+dist/
+build/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Temporary files
+*.tmp
+*.temp
+
+# Large binary/media files (optional - si quieres excluirlos)
+# LISTO/
+
+# Archivos de Adobe Illustrator (opcional)
+# *.ai
