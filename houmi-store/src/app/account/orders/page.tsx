@@ -3,6 +3,7 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { Package, ArrowLeft, Clock, CheckCircle, Truck, XCircle } from "lucide-react";
 import { getCustomerSession } from "@/lib/customer-auth";
+import { getPhpApiBaseUrl } from "@/lib/php-api-base-url";
 
 // Types defined manually — Prisma client pending regeneration (prisma generate blocked by dev server DLL lock)
 interface OrderItem {
@@ -45,7 +46,7 @@ export default async function AccountOrdersPage() {
   const cookieStore = await cookies();
   const token = cookieStore.get("auth_token")?.value;
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost/houmi-master/houmi-store/api";
+  const API_URL = getPhpApiBaseUrl();
 
   let orders: Order[] = [];
   try {

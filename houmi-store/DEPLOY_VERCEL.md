@@ -19,23 +19,16 @@ Los cambios ya están en el código. Para que estén en Vercel haz lo siguiente.
      ```
    - Vercel desplegará solo al hacer **push**.
 
-2. **Aplicar la migración en la base de datos de producción**
-   - En tu máquina, con la `DATABASE_URL` de producción (la de Vercel):
+2. **Base de datos MySQL (producción en Hostinger)**
+   - El storefront PHP usa `api/db.php` contra la MySQL del hosting; las tablas deben existir ahí. Si la BD está vacía, importa en phpMyAdmin el archivo **`all_tables_utf8.sql`**, luego cualquier SQL incremental que uses (columnas nuevas, etc.).
+   - Si Next.js usa Prisma contra la misma MySQL, en tu máquina:
      ```bash
      cd houmi-store
-     set DATABASE_URL=postgresql://...   # la URL de Vercel
-     set DIRECT_URL=postgresql://...     # si la usas
+     set DATABASE_URL=mysql://USER:PASSWORD@HOST:3306/DATABASE
      npx prisma migrate deploy
      ```
-   - O en Vercel → proyecto → Settings → Environment Variables, copia `DATABASE_URL` y `DIRECT_URL`, crea un `.env.production` local solo para esto y ejecuta:
-     ```bash
-     npx prisma migrate deploy
-     ```
-   - Si prefieres no usar migraciones, puedes aplicar solo las columnas nuevas:
-     ```bash
-     npx prisma db push
-     ```
-     (con `DATABASE_URL` y `DIRECT_URL` apuntando a la base de producción).
+     (Sin carpeta `prisma/migrations`, valorar `npx prisma db push` solo si el esquema local y producción deben coincidir.)
+   - En Vercel → Environment Variables: **`NEXT_PUBLIC_API_URL=https://api.houmi.shop`** (sin barra final, salvo que la API esté bajo `/api/`).
 
 ## Opción B: Si usas Vercel CLI (sin Git)
 
@@ -51,8 +44,8 @@ Los cambios ya están en el código. Para que estén en Vercel haz lo siguiente.
    vercel --prod
    ```
 
-3. **Migración en producción** (igual que en Opción A, paso 2):  
-   Ejecuta `npx prisma migrate deploy` o `npx prisma db push` contra la base de datos de Vercel.
+3. **Migración / esquema en producción** (igual que en Opción A, paso 2):  
+   Importa o sincroniza el esquema MySQL en Hostinger; si usas Prisma, `migrate deploy` o `db push` con la URL de producción.
 
 ---
 

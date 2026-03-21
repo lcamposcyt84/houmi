@@ -1,6 +1,7 @@
 import { ProductWithPrices, Category, Settings, Order } from "@/types";
+import { getPhpApiBaseUrl } from "@/lib/php-api-base-url";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost/houmi-master/houmi-store/api";
+const API_URL = getPhpApiBaseUrl();
 
 export async function fetchProducts(options?: { category?: string; limit?: number; search?: string; sort?: string; page?: number; slug?: string }) {
   const params = new URLSearchParams();

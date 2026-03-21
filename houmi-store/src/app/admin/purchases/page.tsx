@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getAdminSession } from "@/lib/auth";
 import { cookies } from "next/headers";
+import { getPhpApiBaseUrl } from "@/lib/php-api-base-url";
 import { PurchasesTable } from "./PurchasesTable";
 
 export const metadata: Metadata = {
@@ -12,7 +13,7 @@ export const metadata: Metadata = {
 async function getPurchases() {
   const cookieStore = await cookies();
   const token = cookieStore.get("admin_token")?.value;
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost/houmi-master/houmi-store/api";
+  const API_URL = getPhpApiBaseUrl();
 
   let purchases: any[] = [];
   let exchangeRate = 40;

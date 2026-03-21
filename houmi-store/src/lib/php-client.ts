@@ -8,7 +8,9 @@
  *  - SSR server-side fetches forward the cookie directly (no cross-origin issue server-to-server)
  */
 
-export const PHP_API_URL = process.env.NEXT_PUBLIC_API_URL || "/api";
+import { getPhpApiBaseUrl } from "@/lib/php-api-base-url";
+
+export const PHP_API_URL = getPhpApiBaseUrl();
 
 /** Build a full URL to a PHP endpoint. Handles query strings correctly. */
 export function phpUrl(path: string): string {

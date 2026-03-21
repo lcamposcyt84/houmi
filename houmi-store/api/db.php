@@ -3,21 +3,28 @@
 
 // --- CORS: allow credentials from known origins
 $allowedOrigins = [
-    'http://localhost:3000',    // Next.js dev server
+    'http://localhost:3000',     // Next.js dev (hostname localhost)
+    'http://127.0.0.1:3000',     // Next.js dev (muchas personas abren esta URL)
     'http://localhost',          // XAMPP same-host requests
+    'http://127.0.0.1',          // XAMPP vía IP
     'https://houmi.vercel.app',  // Vercel subdomain
+    'https://houmi-store-xi.vercel.app', // Producción Next.js (Vercel)
     'https://www.houmi.shop',    // Production
     'https://houmi.shop',        // Production (without www)
     'https://api.houmi.shop',    // API subdomain
 ];
 
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
-if (in_array($origin, $allowedOrigins, true)) {
+// Cualquier preview/deploy en *.vercel.app (HTTPS)
+$isVercelApp = $origin !== '' && preg_match('#^https://[^/]+\.vercel\.app$#i', $origin) === 1;
+
+if (in_array($origin, $allowedOrigins, true) || $isVercelApp) {
     header("Access-Control-Allow-Origin: $origin");
-} else {
-    // For same-origin XAMPP calls (no Origin header), allow without restriction
+} elseif ($origin === '') {
+    // Peticiones sin cabecera Origin (curl, algunos proxies): solo dev
     header("Access-Control-Allow-Origin: http://localhost:3000");
 }
+// Si Origin viene pero no está permitido, no enviar ACAO equivocado (el navegador exige coincidencia exacta)
 header("Access-Control-Allow-Credentials: true");
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization, Cookie");
@@ -42,7 +49,7 @@ if ($isProduction) {
     // --- Hostinger Production ---
     $db   = 'u111276354_produccion';
     $user = 'u111276354_store';
-    $pass = 'Houmi2026';
+    $pass = 'Houmi2026.';
 } else {
     // --- Local XAMPP Development ---
     $db   = 'houmi_dev';

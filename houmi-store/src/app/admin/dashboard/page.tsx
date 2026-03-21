@@ -12,11 +12,12 @@ export const metadata: Metadata = {
 };
 
 import { cookies } from "next/headers";
+import { getPhpApiBaseUrl } from "@/lib/php-api-base-url";
 
 async function getDashboardData() {
   const cookieStore = await cookies();
   const token = cookieStore.get("admin_token")?.value;
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost/houmi-master/houmi-store/api";
+  const API_URL = getPhpApiBaseUrl();
 
   try {
     const res = await fetch(`${API_URL}/admin/dashboard.php`, {

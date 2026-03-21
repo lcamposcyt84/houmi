@@ -10,13 +10,14 @@ export const metadata: Metadata = {
 };
 
 import { cookies } from "next/headers";
+import { getPhpApiBaseUrl } from "@/lib/php-api-base-url";
 
 export const dynamic = "force-dynamic";
 
 async function getOrders() {
   const cookieStore = await cookies();
   const token = cookieStore.get("admin_token")?.value;
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost/houmi-master/houmi-store/api";
+  const API_URL = getPhpApiBaseUrl();
 
   let orders: any[] = [];
   let exchangeRate = 40;
