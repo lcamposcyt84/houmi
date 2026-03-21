@@ -5,9 +5,11 @@ import { ChevronRight } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { calculatePriceDisplay } from "@/lib/currency";
 import { getStockStatus } from "@/lib/utils";
+import { getCustomerSession } from "@/lib/customer-auth";
 import { ProductGallery } from "@/components/products";
 import { Badge } from "@/components/ui";
 import { AddToCartButton } from "./AddToCartButton";
+import { ProductReviews } from "./ProductReviews";
 import type { ProductWithPrices } from "@/types";
 
 interface ProductPageProps {
@@ -74,6 +76,7 @@ export async function generateMetadata({
 export default async function ProductPage({ params }: ProductPageProps) {
   const { slug } = await params;
   const product = await getProduct(slug);
+  const session = await getCustomerSession();
 
   if (!product) {
     notFound();
@@ -82,7 +85,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const isOutOfStock = product.stock === 0;
 
   return (
-    <div className="section">
+    <div className="section mt-24">
       <div className="container-custom">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-2 text-sm text-brand-text-muted mb-8">
@@ -197,6 +200,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
             </div>
           </div>
         </div>
+        
+        {/* Reviews Section at the bottom */}
+        <ProductReviews productId={product.id} isAuthenticated={!!session} />
       </div>
     </div>
   );
