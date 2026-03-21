@@ -178,6 +178,38 @@ export function Header() {
                   {item.name}
                 </Link>
               ))}
+
+              {/* Customer auth in mobile menu */}
+              <div className="pt-2 mt-2 border-t border-gray-100">
+                {mounted && customer ? (
+                  <>
+                    <Link
+                      href="/account"
+                      onClick={() => setIsMenuOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium text-brand-text-muted hover:bg-gray-100 transition-colors"
+                    >
+                      <UserCircle className="w-5 h-5 text-brand-primary" />
+                      Mi cuenta — {customer.firstName}
+                    </Link>
+                    <button
+                      onClick={() => { handleLogout(); setIsMenuOpen(false); }}
+                      className="w-full text-left flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium text-red-500 hover:bg-red-50 transition-colors"
+                    >
+                      <LogIn className="w-5 h-5 rotate-180" />
+                      Cerrar sesión
+                    </button>
+                  </>
+                ) : (
+                  <Link
+                    href="/login"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium text-brand-primary hover:bg-blue-50 transition-colors"
+                  >
+                    <LogIn className="w-5 h-5" />
+                    Iniciar sesión
+                  </Link>
+                )}
+              </div>
             </div>
           </nav>
         )}
