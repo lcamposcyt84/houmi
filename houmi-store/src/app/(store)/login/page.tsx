@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, LogIn } from "lucide-react";
+import { phpFetch, saveToken, getToken } from "@/lib/php-client";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -12,15 +13,34 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+  // Auto-redirect if already logged in (checks localStorage token)
+  useEffect(() => {
+    phpFetch("auth/me")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.customer) {
+          // Fix the infinite loop: if localStorage has the token but the browser doesn't have the cookie,
+          // we must sync it BEFORE redirecting to /account, otherwise the server will bounce us back.
+          const token = getToken();
+          if (token) {
+            document.cookie = `auth_token=${token}; path=/; max-age=${7 * 24 * 60 * 60}`;
+          }
+          const params = new URLSearchParams(window.location.search);
+          // Hard redirect to bypass stale Next.js App Router cache that traps us in the loop
+          window.location.href = params.get("redirect") || "/account";
+        }
+      })
+      .catch(() => {});
+  }, [router]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
     try {
-      const res = await fetch("/api/v1/auth/login", {
+      const res = await phpFetch("auth/login", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
 
@@ -29,10 +49,18 @@ export default function LoginPage() {
       if (!res.ok) {
         setError(data.error || "Error al iniciar sesión");
       } else {
-        // Redirect to account or to the page they came from
-        const params = new URLSearchParams(window.location.search);
-        router.push(params.get("redirect") || "/account");
-        router.refresh();
+        // Persist JWT for subsequent client-side calls
+        if (data.token) {
+          saveToken(data.token);
+          // FORCE the cookie on the Next.js domain so SSR correctly reads it for /account layout
+          document.cookie = `auth_token=${data.token}; path=/; max-age=${7 * 24 * 60 * 60}`;
+        }
+        
+        // Wait a small tick so cookie persists before forcing hard navigation
+        setTimeout(() => {
+          const params = new URLSearchParams(window.location.search);
+          window.location.href = params.get("redirect") || "/account";
+        }, 100);
       }
     } catch {
       setError("Error de conexión. Intenta de nuevo.");

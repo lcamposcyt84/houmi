@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "./db";
 
 const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || "houmi-store-secret-key-change-in-production"
+  process.env.JWT_SECRET || "1ad4f5bc6463a575304c28de4ccb4ebd3a1f2977b368f0e25c93cd381af40254"
 );
 
 export interface CustomerSession {
@@ -42,15 +42,21 @@ export async function verifyCustomerToken(
 ): Promise<CustomerSession | null> {
   try {
     const { payload } = await jwtVerify(token, JWT_SECRET);
+    // Map PHP payload structure (has 'id') to Next.js legacy structure (expects 'customerId')
+    if (payload.id && !payload.customerId) {
+      payload.customerId = payload.id;
+    }
     return payload as unknown as CustomerSession;
-  } catch {
+  } catch (error) {
+    console.error("JWT Verification failed:", error);
     return null;
   }
 }
 
 export async function getCustomerSession(): Promise<CustomerSession | null> {
   const cookieStore = await cookies();
-  const token = cookieStore.get("customer_token")?.value;
+  const token = cookieStore.get("auth_token")?.value || cookieStore.get("customer_token")?.value;
+  console.log("getCustomerSession token found:", token ? "YES (starts with " + token.substring(0, 15) + ")" : "NO");
   if (!token) return null;
   return verifyCustomerToken(token);
 }

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Star, MessageSquarePlus, UserCircle2, CheckCircle, ShieldCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { phpFetch } from "@/lib/php-client";
 
 // Types matching the API response
 interface ReviewCustomer {
@@ -47,7 +48,7 @@ export function ProductReviews({ productId, isAuthenticated }: ProductReviewsPro
   const fetchReviews = async () => {
     try {
       setIsLoading(true);
-      const res = await fetch(`/api/v1/reviews?productId=${productId}`);
+      const res = await phpFetch(`reviews/get?productId=${productId}`);
       if (res.ok) {
         const data = await res.json();
         setReviews(data.reviews || []);
@@ -82,9 +83,8 @@ export function ProductReviews({ productId, isAuthenticated }: ProductReviewsPro
 
     try {
       setIsSubmitting(true);
-      const res = await fetch("/api/v1/reviews", {
+      const res = await phpFetch("reviews/create", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ productId, rating, title, comment }),
       });
 

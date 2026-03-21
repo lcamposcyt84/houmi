@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { Package, ArrowLeft, Clock, CheckCircle, Truck, XCircle } from "lucide-react";
 import { getCustomerSession } from "@/lib/customer-auth";
-import { prisma } from "@/lib/db";
 
 // Types defined manually — Prisma client pending regeneration (prisma generate blocked by dev server DLL lock)
 interface OrderItem {
@@ -42,29 +42,27 @@ export default async function AccountOrdersPage() {
   const session = await getCustomerSession();
   if (!session) redirect("/login");
 
-  // Raw SQL bypasses stale Prisma client — new fields (customerId, Shipment) not yet in generated types
-  const rawOrders = await prisma.$queryRawUnsafe<
-    Array<{ id: string; orderNumber: string; status: string; totalUsd: number; createdAt: Date }>
-  >(
-    `SELECT id, orderNumber, status, totalUsd, createdAt FROM Sale WHERE customerId = ? ORDER BY createdAt DESC`,
-    session.customerId
-  );
+  const cookieStore = await cookies();
+  const token = cookieStore.get("auth_token")?.value;
 
-  const orders: Order[] = await Promise.all(
-    rawOrders.map(async (order) => {
-      const [items, shipments] = await Promise.all([
-        prisma.$queryRawUnsafe<OrderItem[]>(
-          `SELECT id, productName, quantity, priceUsd FROM SaleItem WHERE saleId = ?`,
-          order.id
-        ),
-        prisma.$queryRawUnsafe<Shipment[]>(
-          `SELECT carrier, trackingNumber, trackingUrl, status FROM Shipment WHERE saleId = ? ORDER BY createdAt DESC LIMIT 1`,
-          order.id
-        ),
-      ]);
-      return { ...order, items, shipments };
-    })
-  );
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost/houmi-master/houmi-store/api";
+
+  let orders: Order[] = [];
+  try {
+    const res = await fetch(`${API_URL}/orders/get.php`, {
+      headers: {
+        Cookie: `auth_token=${token}`
+      },
+      cache: "no-store",
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      orders = data.orders || [];
+    }
+  } catch (e) {
+    console.error("Failed to fetch orders from PHP backend", e);
+  }
 
   return (
     <div className="container-custom py-12 max-w-5xl">

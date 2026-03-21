@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Heart, ArrowLeft, Trash2, ShoppingCart } from "lucide-react";
 import { useCartStore } from "@/store/cart";
+import { phpFetch } from "@/lib/php-client";
 
 interface RawProduct {
   id: string;
@@ -29,21 +30,20 @@ export default function WishlistPage() {
 
   useEffect(() => {
     // Fetch exchange rate for price calculations
-    fetch("/api/settings")
+    phpFetch("admin/settings/get")
       .then((r) => (r.ok ? r.json() : null))
-      .then((s) => { if (s?.exchangeRateUsdToVes) setExchangeRate(s.exchangeRateUsdToVes); })
+      .then((s) => { if (s?.settings?.exchangeRateUsdToVes) setExchangeRate(s.settings.exchangeRateUsdToVes); })
       .catch(() => {});
 
-    fetch("/api/v1/wishlist")
+    phpFetch("wishlist/get")
       .then((r) => r.json())
       .then((data) => { if (data.items) setItems(data.items); })
       .finally(() => setLoading(false));
   }, []);
 
   const removeItem = async (productId: string) => {
-    await fetch("/api/v1/wishlist", {
+    await phpFetch("wishlist/remove", {
       method: "DELETE",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ productId }),
     });
     setItems((prev) => prev.filter((i) => i.product.id !== productId));
@@ -70,7 +70,6 @@ export default function WishlistPage() {
       },
     };
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     addItem(cartProduct as any);
     removeItem(p.id);
   };

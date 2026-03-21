@@ -1,7 +1,7 @@
 import { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getAdminSession } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { cookies } from "next/headers";
 import { ExpensesTable } from "./ExpensesTable";
 
 export const metadata: Metadata = {
@@ -10,17 +10,38 @@ export const metadata: Metadata = {
 };
 
 async function getExpenses() {
-  const [expenses, settings] = await Promise.all([
-    prisma.expense.findMany({
-      orderBy: { date: "desc" },
-    }),
-    prisma.settings.findUnique({ where: { id: "main" } }),
-  ]);
+  const cookieStore = await cookies();
+  const token = cookieStore.get("admin_token")?.value;
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost/houmi-master/houmi-store/api";
 
-  return {
-    expenses,
-    exchangeRate: settings?.exchangeRateUsdToVes || 40,
-  };
+  let expenses: any[] = [];
+  let exchangeRate = 40;
+
+  try {
+    const [res, settingsRes] = await Promise.all([
+      fetch(`${API_URL}/admin/expenses/get.php`, {
+        headers: { Cookie: `admin_token=${token}` },
+        cache: "no-store",
+      }),
+      fetch(`${API_URL}/admin/settings/get.php`, {
+        headers: { Cookie: `admin_token=${token}` },
+        cache: "no-store",
+      }),
+    ]);
+
+    if (res.ok) {
+      const data = await res.json();
+      expenses = data.expenses || [];
+    }
+    if (settingsRes.ok) {
+      const sd = await settingsRes.json();
+      exchangeRate = sd.settings?.exchangeRateUsdToVes || 40;
+    }
+  } catch (e) {
+    console.error("Failed to fetch expenses from PHP API", e);
+  }
+
+  return { expenses, exchangeRate };
 }
 
 export default async function ExpensesPage() {

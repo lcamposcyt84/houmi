@@ -8,6 +8,7 @@ import { Menu, X, ShoppingCart, Search, UserCircle, LogIn } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCartStore } from "@/store/cart";
 import { Button } from "@/components/ui";
+import { phpFetch, clearToken } from "@/lib/php-client";
 
 const navigation = [
   { name: "Inicio", href: "/" },
@@ -26,7 +27,7 @@ export function Header() {
   useEffect(() => {
     setMounted(true);
     // Check customer session silently
-    fetch("/api/v1/auth/me")
+    phpFetch("auth/me")
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => { if (data?.customer) setCustomer(data.customer); })
       .catch(() => {});
@@ -44,7 +45,8 @@ export function Header() {
   const totalItems = mounted ? getTotalItems() : 0;
 
   const handleLogout = async () => {
-    await fetch("/api/v1/auth/logout", { method: "POST" });
+    clearToken();
+    await phpFetch("auth/logout", { method: "POST" });
     setCustomer(null);
     router.push("/");
     router.refresh();

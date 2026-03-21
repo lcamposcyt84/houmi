@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { Metadata } from "next";
 import Link from "next/link";
-import { prisma } from "@/lib/db";
+
 import { calculatePriceDisplay } from "@/lib/currency";
 import { getStockStatus } from "@/lib/utils";
 import { ProductGrid, ProductFilters } from "@/components/products";
@@ -22,6 +22,8 @@ interface ProductsPageProps {
   }>;
 }
 
+import { fetchProducts, fetchCategories } from "@/lib/php-api";
+
 async function getProducts(params: {
   search?: string;
   category?: string;
@@ -37,77 +39,29 @@ async function getProducts(params: {
   const sortBy = params.sort || "newest";
   const page = parseInt(params.page || "1", 10);
   const limit = 24;
-  const skip = (page - 1) * limit;
 
-  // Build where clause
-  const where: Record<string, unknown> = {
-    isActive: true,
-  };
+  try {
+    const [{ products: phpProducts, exchangeRate, total }, { categories }] = await Promise.all([
+      fetchProducts({ search, category: categorySlug, sort: sortBy, page, limit }),
+      fetchCategories()
+    ]);
 
-  if (search) {
-    where.OR = [
-      { name: { contains: search } },
-      { code: { contains: search } },
-      { description: { contains: search } },
-    ];
+    const productsWithPrices: any[] = phpProducts.map((product) => {
+      const images = Array.isArray(product.images) && product.images.length > 0 
+        ? product.images 
+        : ["/placeholder.svg"];
+
+      return {
+        ...product,
+        images,
+      };
+    });
+
+    return { products: productsWithPrices as ProductWithPrices[], categories, total: total || 0 };
+  } catch (error) {
+    console.error("Error fetching catalog products:", error);
+    return { products: [], categories: [], total: 0 };
   }
-
-  if (categorySlug) {
-    where.category = { slug: categorySlug };
-  }
-
-  // Build orderBy
-  let orderBy: Record<string, unknown> = { createdAt: "desc" };
-
-  if (sortBy === "price_asc") {
-    orderBy = { pricing: { priceUsd: "asc" } };
-  } else if (sortBy === "price_desc") {
-    orderBy = { pricing: { priceUsd: "desc" } };
-  } else if (sortBy === "name") {
-    orderBy = { name: "asc" };
-  }
-
-  const [products, total, categories, settings] = await Promise.all([
-    prisma.product.findMany({
-      where,
-      include: {
-        category: true,
-        inventory: true,
-        pricing: true,
-      },
-      orderBy,
-      skip,
-      take: limit,
-    }),
-    prisma.product.count({ where }),
-    prisma.category.findMany({
-      orderBy: { name: "asc" },
-    }),
-    prisma.settings.findUnique({ where: { id: "main" } }),
-  ]);
-
-  const exchangeRate = settings?.exchangeRateUsdToVes || 40;
-
-  const productsWithPrices: ProductWithPrices[] = products.map((product) => {
-    const priceUsd = product.pricing?.priceUsd || 0;
-    const stock = product.inventory?.stock || 0;
-    const images = JSON.parse(product.images) as string[];
-
-    return {
-      ...product,
-      images,
-      priceDisplay: calculatePriceDisplay(
-        priceUsd,
-        exchangeRate,
-        product.pricing?.priceVes,
-        product.pricing?.manualVes
-      ),
-      stock,
-      stockStatus: getStockStatus(stock),
-    };
-  });
-
-  return { products: productsWithPrices, categories, total };
 }
 
 function ProductsLoading() {

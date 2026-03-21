@@ -6,13 +6,14 @@ export interface Product {
   slug: string;
   description: string | null;
   images: string[];
-  isActive: boolean;
-  categoryId: string;
-  category: Category;
-  inventory: Inventory | null;
-  pricing: Pricing | null;
-  createdAt: Date;
-  updatedAt: Date;
+  isActive?: boolean;
+  categoryId?: string;
+  category?: Category;
+  inventory?: Inventory | null;
+  pricing?: Pricing | null;
+  price?: number;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface Category {

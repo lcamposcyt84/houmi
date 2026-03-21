@@ -124,7 +124,7 @@ export function CartDrawer() {
                         {item.product.name}
                       </h3>
                       <p className="text-sm text-brand-text-muted mb-2">
-                        {item.product.category.name}
+                        {item.product.category?.name}
                       </p>
                       
                       {/* Price */}

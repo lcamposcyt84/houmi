@@ -8,6 +8,7 @@ import { Badge, Button } from "@/components/ui";
 import { useCartStore } from "@/store/cart";
 import type { ProductWithPrices } from "@/types";
 import { cn } from "@/lib/utils";
+import { phpFetch } from "@/lib/php-client";
 
 interface ProductCardProps {
   product: ProductWithPrices;
@@ -27,13 +28,13 @@ export function ProductCard({ product, className }: ProductCardProps) {
 
   useEffect(() => {
     // Check if user is logged in and if product is in wishlist
-    fetch("/api/v1/auth/me")
+    phpFetch("auth/me")
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (data?.customer) {
           setIsLoggedIn(true);
           // Check wishlist status
-          return fetch("/api/v1/wishlist");
+          return phpFetch("wishlist/get");
         }
         return null;
       })
@@ -72,15 +73,13 @@ export function ProductCard({ product, className }: ProductCardProps) {
 
     try {
       if (optimisticState) {
-        await fetch("/api/v1/wishlist", {
+        await phpFetch("wishlist/add", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ productId: product.id }),
         });
       } else {
-        await fetch("/api/v1/wishlist", {
+        await phpFetch("wishlist/remove", {
           method: "DELETE",
-          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ productId: product.id }),
         });
       }
@@ -171,7 +170,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
       <div className="p-4">
         {/* Category */}
         <p className="text-xs text-brand-text-muted uppercase tracking-wide mb-1">
-          {product.category.name}
+          {product.category?.name}
         </p>
 
         {/* Name */}

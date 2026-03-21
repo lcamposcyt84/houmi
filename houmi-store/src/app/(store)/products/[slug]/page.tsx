@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
-import { prisma } from "@/lib/db";
+
 import { calculatePriceDisplay } from "@/lib/currency";
 import { getStockStatus } from "@/lib/utils";
 import { getCustomerSession } from "@/lib/customer-auth";
@@ -15,39 +15,49 @@ import type { ProductWithPrices } from "@/types";
 interface ProductPageProps {
   params: Promise<{ slug: string }>;
 }
+import { fetchProductBySlug } from "@/lib/php-api";
 
-async function getProduct(slug: string): Promise<ProductWithPrices | null> {
-  const [product, settings] = await Promise.all([
-    prisma.product.findUnique({
-      where: { slug },
-      include: {
-        category: true,
-        inventory: true,
-        pricing: true,
-      },
-    }),
-    prisma.settings.findUnique({ where: { id: "main" } }),
-  ]);
+async function getProduct(slug: string): Promise<any | null> {
+  try {
+    const res = await fetchProductBySlug(slug);
+    if (!res) return null;
 
-  if (!product) return null;
+    const { product, exchangeRate } = res;
+    
+    const priceUsd = product.price || 0;
+    const stock = product.inventory?.stock || 0;
+    
+    let images = ["/placeholder.svg"];
+    try {
+      if (product.images) {
+        images = typeof (product.images as any) === 'string' && (product.images as any).startsWith('[') 
+          ? JSON.parse(product.images as any) 
+          : (Array.isArray(product.images) ? product.images : [product.images]);
+      }
+    } catch (e) {}
 
-  const exchangeRate = settings?.exchangeRateUsdToVes || 40;
-  const priceUsd = product.pricing?.priceUsd || 0;
-  const stock = product.inventory?.stock || 0;
-  const images = JSON.parse(product.images) as string[];
-
-  return {
-    ...product,
-    images,
-    priceDisplay: calculatePriceDisplay(
-      priceUsd,
-      exchangeRate,
-      product.pricing?.priceVes,
-      product.pricing?.manualVes
-    ),
-    stock,
-    stockStatus: getStockStatus(stock),
-  };
+    return {
+      id: product.id,
+      name: product.name,
+      description: product.description,
+      code: product.code,
+      slug: product.slug,
+      categoryId: product.categoryId || product.category?.id || '',
+      category: product.category || { id: '', name: '', slug: '' },
+      images,
+      priceDisplay: calculatePriceDisplay(
+        priceUsd,
+        exchangeRate,
+        null,
+        false
+      ),
+      stock,
+      stockStatus: getStockStatus(stock),
+    };
+  } catch (error) {
+    console.error("Error fetching product by slug:", error);
+    return null;
+  }
 }
 
 export async function generateMetadata({

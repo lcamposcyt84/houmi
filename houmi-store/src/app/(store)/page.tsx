@@ -1,57 +1,41 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Truck, CreditCard, Headphones, Shield } from "lucide-react";
-import { prisma } from "@/lib/db";
+import { fetchProducts, fetchCategories } from "@/lib/php-api";
 import { calculatePriceDisplay } from "@/lib/currency";
 import { getStockStatus } from "@/lib/utils";
 import { Button } from "@/components/ui";
 import { ProductCard } from "@/components/products";
-import type { ProductWithPrices } from "@/types";
 
-async function getFeaturedProducts(): Promise<ProductWithPrices[]> {
-  const [products, settings] = await Promise.all([
-    prisma.product.findMany({
-      where: { isActive: true },
-      include: {
-        category: true,
-        inventory: true,
-        pricing: true,
-      },
-      orderBy: { createdAt: "desc" },
-      take: 8,
-    }),
-    prisma.settings.findUnique({ where: { id: "main" } }),
-  ]);
+async function getFeaturedProducts() {
+  try {
+    const { products, exchangeRate } = await fetchProducts({ limit: 8 });
+    
+    return products.map((product: any) => {
+      // images are returned as array from PHP
+      const images = Array.isArray(product.images) && product.images.length > 0 
+        ? product.images 
+        : ["/placeholder.svg"];
 
-  const exchangeRate = settings?.exchangeRateUsdToVes || 40;
-
-  return products.map((product) => {
-    const priceUsd = product.pricing?.priceUsd || 0;
-    const stock = product.inventory?.stock || 0;
-    const images = JSON.parse(product.images) as string[];
-
-    return {
-      ...product,
-      images,
-      priceDisplay: calculatePriceDisplay(
-        priceUsd,
-        exchangeRate,
-        product.pricing?.priceVes,
-        product.pricing?.manualVes
-      ),
-      stock,
-      stockStatus: getStockStatus(stock),
-    };
-  });
+      return {
+        ...product,
+        images,
+      };
+    });
+  } catch (error) {
+    console.error("Error fetching featured products:", error);
+    return [];
+  }
 }
 
-async function getCategories() {
-  return prisma.category.findMany({
-    orderBy: { name: "asc" },
-    include: {
-      _count: { select: { products: true } },
-    },
-  });
+async function getCategoriesList() {
+  try {
+    const { categories } = await fetchCategories();
+    return categories;
+  } catch (error) {
+    console.error("Error fetching categories:", error);
+    return [];
+  }
 }
 
 const benefits = [
@@ -80,7 +64,7 @@ const benefits = [
 export default async function HomePage() {
   const [featuredProducts, categories] = await Promise.all([
     getFeaturedProducts(),
-    getCategories(),
+    getCategoriesList(),
   ]);
 
   return (
@@ -175,7 +159,7 @@ export default async function HomePage() {
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-            {categories.map((category, index) => (
+            {categories.map((category: any, index: number) => (
               <Link
                 key={category.id}
                 href={`/products?category=${category.slug}`}
@@ -187,7 +171,7 @@ export default async function HomePage() {
                     {category.name}
                   </h3>
                   <p className="text-sm text-brand-text-muted group-hover:text-white/80 transition-colors mt-1">
-                    {category._count.products} productos
+                    {category.productCount ?? 0} productos
                   </p>
                 </div>
                 <ArrowRight className="absolute bottom-4 right-4 w-5 h-5 text-brand-primary group-hover:text-brand-accent transform group-hover:translate-x-1 transition-all" />
@@ -217,7 +201,7 @@ export default async function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-            {featuredProducts.map((product, index) => (
+            {featuredProducts.map((product: any, index: number) => (
               <div
                 key={product.id}
                 className="animate-fade-in"

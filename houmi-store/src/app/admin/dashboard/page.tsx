@@ -1,7 +1,7 @@
 import { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getAdminSession } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+
 import { DashboardStats } from "./DashboardStats";
 import { RecentActivity } from "./RecentActivity";
 import { QuickActions } from "./QuickActions";
@@ -11,59 +11,59 @@ export const metadata: Metadata = {
   description: "Panel de control de Houmi Store",
 };
 
-async function getDashboardData() {
-  const [
-    totalProducts,
-    activeProducts,
-    totalCategories,
-    lowStockProducts,
-    totalSales,
-    recentSales,
-    totalExpenses,
-    totalPurchases,
-    settings,
-  ] = await Promise.all([
-    prisma.product.count(),
-    prisma.product.count({ where: { isActive: true } }),
-    prisma.category.count(),
-    prisma.inventory.count({ where: { stock: { lte: 5 } } }),
-    prisma.sale.aggregate({
-      _sum: { totalUsd: true },
-      _count: true,
-    }),
-    prisma.sale.findMany({
-      take: 5,
-      orderBy: { createdAt: "desc" },
-      include: { items: true },
-    }),
-    prisma.expense.aggregate({
-      _sum: { amountUsd: true },
-      _count: true,
-    }),
-    prisma.purchase.aggregate({
-      _sum: { totalUsd: true },
-      _count: true,
-    }),
-    prisma.settings.findUnique({ where: { id: "main" } }),
-  ]);
+import { cookies } from "next/headers";
 
-  const exchangeRate = settings?.exchangeRateUsdToVes || 40;
+async function getDashboardData() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("admin_token")?.value;
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost/houmi-master/houmi-store/api";
+
+  try {
+    const res = await fetch(`${API_URL}/admin/dashboard.php`, {
+      headers: {
+        Cookie: `admin_token=${token}`
+      },
+      cache: "no-store"
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      return {
+        stats: {
+          totalProducts: data.metrics.totalProducts || 0,
+          activeProducts: data.metrics.activeProducts || 0,
+          totalCategories: data.metrics.totalCategories || 0,
+          lowStockProducts: data.metrics.lowStock || 0,
+          totalSalesUsd: data.metrics.totalSalesUsd || 0,
+          totalSalesCount: data.recentSales?.length || 0,
+          totalExpensesUsd: data.metrics.totalExpensesUsd || 0,
+          totalExpensesCount: 0,
+          totalPurchasesUsd: data.metrics.totalPurchasesUsd || 0,
+          totalPurchasesCount: 0,
+          exchangeRate: data.exchangeRate || 40,
+        },
+        recentSales: data.recentSales || [],
+      };
+    }
+  } catch (e) {
+    console.error("Failed to fetch dashboard data", e);
+  }
 
   return {
     stats: {
-      totalProducts,
-      activeProducts,
-      totalCategories,
-      lowStockProducts,
-      totalSalesUsd: totalSales._sum.totalUsd || 0,
-      totalSalesCount: totalSales._count,
-      totalExpensesUsd: totalExpenses._sum.amountUsd || 0,
-      totalExpensesCount: totalExpenses._count,
-      totalPurchasesUsd: totalPurchases._sum.totalUsd || 0,
-      totalPurchasesCount: totalPurchases._count,
-      exchangeRate,
+      totalProducts: 0,
+      activeProducts: 0,
+      totalCategories: 0,
+      lowStockProducts: 0,
+      totalSalesUsd: 0,
+      totalSalesCount: 0,
+      totalExpensesUsd: 0,
+      totalExpensesCount: 0,
+      totalPurchasesUsd: 0,
+      totalPurchasesCount: 0,
+      exchangeRate: 40,
     },
-    recentSales,
+    recentSales: [],
   };
 }
 

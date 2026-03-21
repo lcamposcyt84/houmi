@@ -8,6 +8,7 @@ import { ShoppingBag, ArrowLeft, CheckCircle, AlertCircle, MessageCircle, Credit
 import { useCartStore } from "@/store/cart";
 import { Button, Input, Card } from "@/components/ui";
 import { formatUSD, formatBs } from "@/lib/currency";
+import { phpFetch } from "@/lib/php-client";
 
 interface FormData {
   name: string;
@@ -58,7 +59,7 @@ export function CheckoutForm() {
   useEffect(() => {
     setMounted(true);
     // Detect logged-in customer and autofill
-    fetch("/api/v1/auth/me")
+    phpFetch("auth/me")
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (data?.customer) {

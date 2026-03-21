@@ -3,6 +3,7 @@
 import { LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { phpFetch, clearToken } from "@/lib/php-client";
 
 export function LogoutButton() {
   const router = useRouter();
@@ -10,10 +11,8 @@ export function LogoutButton() {
 
   const handleLogout = async () => {
     try {
-      setLoggingOut(true);
-      await fetch("/api/v1/auth/logout", {
-        method: "POST",
-      });
+      clearToken();
+      await phpFetch("auth/logout", { method: "POST" });
       // Force hard redirect to clear all contexts
       window.location.href = "/login";
     } catch (e) {

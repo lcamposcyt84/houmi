@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, UserPlus } from "lucide-react";
+import { phpFetch, saveToken } from "@/lib/php-client";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -34,9 +35,8 @@ export default function RegisterPage() {
 
     setLoading(true);
     try {
-      const res = await fetch("/api/v1/auth/register", {
+      const res = await phpFetch("auth/register", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           firstName: form.firstName,
           lastName: form.lastName,
@@ -51,8 +51,15 @@ export default function RegisterPage() {
       if (!res.ok) {
         setError(data.error || "Error al registrarse");
       } else {
-        router.push("/account");
-        router.refresh();
+        if (data.token) {
+          saveToken(data.token);
+          // FORCE the cookie on the Next.js domain so SSR correctly reads it for /account layout
+          document.cookie = `auth_token=${data.token}; path=/; max-age=${7 * 24 * 60 * 60}`;
+        }
+        
+        setTimeout(() => {
+          window.location.href = "/account";
+        }, 100);
       }
     } catch {
       setError("Error de conexión. Intenta de nuevo.");

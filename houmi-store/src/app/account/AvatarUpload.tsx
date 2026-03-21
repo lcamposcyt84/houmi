@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Camera, Loader2 } from "lucide-react";
+import { phpFetch } from "@/lib/php-client";
 
 interface AvatarUploadProps {
   currentAvatar: string | null;
@@ -37,7 +38,7 @@ export function AvatarUpload({ currentAvatar, initials }: AvatarUploadProps) {
       const formData = new FormData();
       formData.append("file", file);
 
-      const res = await fetch("/api/v1/auth/me/avatar", {
+      const res = await phpFetch("auth/me/avatar", {
         method: "POST",
         body: formData,
       });
