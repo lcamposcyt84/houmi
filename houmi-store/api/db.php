@@ -13,7 +13,8 @@ $allowedOrigins = [
     'https://houmi-store-xi.vercel.app', 
     'https://www.houmi.shop',    
     'https://houmi.shop',        
-    'https://api.houmi.shop',    
+    'https://api.houmi.shop',
+    'https://site.houmi.shop',   // Nuevo subdominio Frontend
 ];
 
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
