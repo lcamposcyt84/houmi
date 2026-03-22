@@ -31,7 +31,7 @@ try {
     }
 
     $newId = 'wsh_' . bin2hex(random_bytes(8));
-    $addStmt = $pdo->prepare('INSERT INTO WishlistItem (id, customerId, productId, createdAt, updatedAt) VALUES (:id, :cId, :pId, NOW(), NOW())');
+    $addStmt = $pdo->prepare('INSERT INTO WishlistItem (id, customerId, productId, createdAt) VALUES (:id, :cId, :pId, NOW())');
     $addStmt->execute([':id' => $newId, ':cId' => $customerId, ':pId' => $productId]);
 
     echo json_encode(['success' => true, 'action' => 'added']);
