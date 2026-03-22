@@ -3,15 +3,17 @@
 
 // --- CORS: allow credentials from known origins
 $allowedOrigins = [
-    'http://localhost:3000',     // Next.js dev (hostname localhost)
-    'http://127.0.0.1:3000',     // Next.js dev (muchas personas abren esta URL)
-    'http://localhost',          // XAMPP same-host requests
-    'http://127.0.0.1',          // XAMPP vía IP
-    'https://houmi.vercel.app',  // Vercel subdomain
-    'https://houmi-store-xi.vercel.app', // Producción Next.js (Vercel)
-    'https://www.houmi.shop',    // Production
-    'https://houmi.shop',        // Production (without www)
-    'https://api.houmi.shop',    // API subdomain
+    'http://localhost:3000',     // Next.js dev
+    'http://localhost:5173',     // Vite dev
+    'http://localhost:5174',     // Vite dev (alternate)
+    'http://127.0.0.1:3000',     // Next.js dev
+    'http://localhost',          // XAMPP
+    'http://127.0.0.1',          // XAMPP
+    'https://houmi.vercel.app',  // Vercel
+    'https://houmi-store-xi.vercel.app', 
+    'https://www.houmi.shop',    
+    'https://houmi.shop',        
+    'https://api.houmi.shop',    
 ];
 
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '';

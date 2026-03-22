@@ -1,0 +1,159 @@
+@import "tailwindcss";
+
+/* ============================================================
+   TAILWIND v4 THEME — Tokens exactos del tailwind.config.ts
+   del proyecto original Next.js + variables CSS para uso directo
+   ============================================================ */
+@theme {
+  /* === Colores de marca === */
+  --color-brand-primary: #1B3A6D;
+  --color-brand-primary-light: #2A4F8F;
+  --color-brand-primary-dark: #0F2444;
+  --color-brand-secondary: #F7C72C;
+  --color-brand-accent: #F7C72C;
+  --color-brand-accent-light: #FFD95A;
+  --color-brand-accent-dark: #D4A520;
+  --color-brand-background: #FAFBFC;
+  --color-brand-surface: #FFFFFF;
+  --color-brand-surface-elevated: #F5F7FA;
+  --color-brand-text: #1A1D21;
+  --color-brand-text-muted: #6B7280;
+  --color-brand-border: #E5E7EB;
+
+  /* === Tipografías (sintaxis Tailwind v4) === */
+  --font-family-sans: "Inter", system-ui, sans-serif;
+  --font-family-display: "Outfit", system-ui, sans-serif;
+
+  /* === Animaciones === */
+  --animate-fade-in: fadeIn 0.5s ease-out both;
+  --animate-slide-up: slideUp 0.5s ease-out both;
+  --animate-slide-in-right: slideInRight 0.3s ease-out both;
+  --animate-pulse-soft: pulseSoft 2s ease-in-out infinite;
+}
+
+/* Variables CSS "raw" para compatibilidad con var() en clases inline y JS */
+:root {
+  --brand-primary: #1B3A6D;
+  --brand-primary-light: #2A4F8F;
+  --brand-primary-dark: #0F2444;
+  --brand-secondary: #F7C72C;
+  --brand-accent: #F7C72C;
+  --brand-accent-light: #FFD95A;
+  --brand-accent-dark: #D4A520;
+  --brand-background: #FAFBFC;
+  --brand-surface: #FFFFFF;
+  --brand-surface-elevated: #F5F7FA;
+  --brand-text: #1A1D21;
+  --brand-text-muted: #6B7280;
+  --brand-text-on-primary: #FFFFFF;
+  --brand-text-on-accent: #1B3A6D;
+  --brand-success: #10B981;
+  --brand-warning: #F59E0B;
+  --brand-error: #EF4444;
+  --brand-info: #3B82F6;
+  --brand-border: #E5E7EB;
+  --brand-border-focus: #1B3A6D;
+  --radius: 0.75rem;
+}
+
+/* ============================================================
+   Keyframes
+   ============================================================ */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes pulseSoft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* ============================================================
+   Base layer
+   ============================================================ */
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: #FAFBFC;
+    color: #1A1D21;
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    font-family: "Inter", system-ui, sans-serif;
+    min-height: 100vh;
+  }
+
+  *:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px #1B3A6D, 0 0 0 4px transparent;
+  }
+
+  ::selection {
+    background-color: #F7C72C;
+    color: #1A1D21;
+  }
+}
+
+/* ============================================================
+   Utilities manuales (clases que Tailwind v4 no autogenera
+   con la misma sintaxis del config v3 original)
+   ============================================================ */
+
+/* Fuente de display (usada con font-display) */
+.font-display {
+  font-family: "Outfit", system-ui, sans-serif;
+}
+
+/* Container */
+.container-custom {
+  max-width: 80rem;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+@media (min-width: 640px) {
+  .container-custom { padding-left: 1.5rem; padding-right: 1.5rem; }
+}
+@media (min-width: 1024px) {
+  .container-custom { padding-left: 2rem; padding-right: 2rem; }
+}
+
+/* Section spacing */
+.section {
+  padding-top: 3rem;
+  padding-bottom: 3rem;
+}
+@media (min-width: 768px) {
+  .section { padding-top: 4rem; padding-bottom: 4rem; }
+}
+@media (min-width: 1024px) {
+  .section { padding-top: 5rem; padding-bottom: 5rem; }
+}
+
+/* Animations */
+.animate-fade-in    { animation: fadeIn 0.5s ease-out both; }
+.animate-slide-up   { animation: slideUp 0.5s ease-out both; }
+.animate-slide-in-right { animation: slideInRight 0.3s ease-out both; }
+.animate-pulse-soft { animation: pulseSoft 2s ease-in-out infinite; }
+
+/* Animation delays */
+.animation-delay-100 { animation-delay: 100ms; }
+.animation-delay-200 { animation-delay: 200ms; }
+.animation-delay-300 { animation-delay: 300ms; }
+.animation-delay-400 { animation-delay: 400ms; }
+.animation-delay-500 { animation-delay: 500ms; }
+
+/* Scrollbar hide */
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+.scrollbar-hide::-webkit-scrollbar { display: none; }
