@@ -51,7 +51,7 @@ if ($isProduction) {
     // --- Hostinger Production ---
     $db   = 'u111276354_produccion';
     $user = 'u111276354_store';
-    $pass = 'Houmi2026.';
+    $pass = 'Houmi2026';
 } else {
     // --- Local XAMPP Development ---
     $db   = 'houmi_dev';
