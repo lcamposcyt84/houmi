@@ -49,27 +49,37 @@ try {
         }
 
         $formattedProducts[] = [
-            'wishlist_id' => $row['wishlistItemId'], // Keep relationship ID
-            'id' => $row['id'],
-            'name' => $row['name'],
-            'slug' => $row['slug'],
-            'images' => json_decode($row['images'], true) ?: [],
-            'category' => [
-                'name' => $row['categoryName'],
-                'slug' => $row['categorySlug']
-            ],
-            'priceDisplay' => [
-                'usd' => $usdDisplay,
-                'ves' => $vesDisplay,
-                'usdRaw' => $priceUsd,
-                'vesRaw' => $priceVesRaw
-            ],
-            'stock' => $stock,
-            'stockStatus' => $stockStatus
+            'id' => $row['wishlistItemId'],
+            'product' => [
+                'id' => $row['id'],
+                'name' => $row['name'],
+                'slug' => $row['slug'],
+                'images' => json_decode($row['images'], true) ?: [],
+                'category' => [
+                    'name' => $row['categoryName'],
+                    'slug' => $row['categorySlug']
+                ],
+                'pricing' => [
+                    'priceUsd' => $priceUsd,
+                    'priceVes' => $priceVesRaw,
+                    'manualVes' => (bool)$row['manualVes']
+                ],
+                'inventory' => [
+                    'stock' => $stock
+                ],
+                'priceDisplay' => [
+                    'usd' => $usdDisplay,
+                    'ves' => $vesDisplay,
+                    'usdRaw' => $priceUsd,
+                    'vesRaw' => $priceVesRaw
+                ],
+                'stock' => $stock,
+                'stockStatus' => $stockStatus
+            ]
         ];
     }
 
-    echo json_encode(['wishlist' => $formattedProducts, 'exchangeRate' => $exchangeRate]);
+    echo json_encode(['items' => $formattedProducts, 'exchangeRate' => $exchangeRate]);
 
 } catch (\PDOException $e) {
     http_response_code(500);

@@ -35,6 +35,7 @@ try {
                 'priceUsd' => (float)$item['priceUsd'],
                 'priceVes' => (float)$item['priceVes'],
                 'product' => [
+                    'id' => $item['productId'],
                     'name' => $item['productName'],
                     'slug' => $item['productSlug'],
                     'images' => json_decode($item['images'], true) ?: []
