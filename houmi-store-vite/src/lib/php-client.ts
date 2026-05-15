@@ -31,20 +31,20 @@ const TOKEN_KEY = "houmi_auth_token";
 /** Save the JWT after a successful login/register. */
 export function saveToken(token: string): void {
   if (typeof window !== "undefined") {
-    localStorage.setItem(TOKEN_KEY, token);
+    sessionStorage.setItem(TOKEN_KEY, token);
   }
 }
 
 /** Read the stored JWT. Returns null if not logged in. */
 export function getToken(): string | null {
   if (typeof window === "undefined") return null;
-  return localStorage.getItem(TOKEN_KEY);
+  return sessionStorage.getItem(TOKEN_KEY);
 }
 
 /** Remove the JWT (logout). */
 export function clearToken(): void {
   if (typeof window !== "undefined") {
-    localStorage.removeItem(TOKEN_KEY);
+    sessionStorage.removeItem(TOKEN_KEY);
   }
 }
 
@@ -52,10 +52,13 @@ export function clearToken(): void {
 
 /**
  * Returns headers containing the Authorization Bearer token if logged in.
- * Merge with your own headers: { ...authHeaders(), "Content-Type": "application/json" }
+ * Extract token depending on the context (admin vs regular customer)
  */
-export function authHeaders(): Record<string, string> {
-    const t = getToken(); return t ? { Authorization: `Bearer ${t}` } : {};
+export function authHeaders(isAdminContext = false): Record<string, string> {
+    const t = isAdminContext 
+      ? (typeof window !== "undefined" ? sessionStorage.getItem("houmi_admin_token") : null)
+      : getToken(); 
+    return t ? { Authorization: `Bearer ${t}` } : {};
 }
 
 // ─── Authenticated fetch wrapper ──────────────────────────────────────────────
@@ -70,11 +73,12 @@ export async function phpFetch(
   options: RequestInit = {}
 ): Promise<Response> {
   const url = phpUrl(path);
+  const isAdminPath = path.startsWith("admin/");
   // Don't force Content-Type for FormData — the browser sets the multipart boundary
   const isFormData = options.body instanceof FormData;
   const headers: Record<string, string> = {
     ...(isFormData ? {} : { "Content-Type": "application/json" }),
-    ...authHeaders(),
+    ...authHeaders(isAdminPath),
     ...(options.headers as Record<string, string> | undefined),
   };
   return fetch(url, { ...options, headers });

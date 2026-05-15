@@ -1,5 +1,4 @@
 <?php
-// get.php - Fetch all orders for admin dashboard
 require_once dirname(dirname(__DIR__)) . '/db.php';
 require_once dirname(__DIR__) . '/auth.php';
 
@@ -43,25 +42,29 @@ try {
 
         $formattedSales[] = [
             'id' => $sale['id'],
+            'orderNumber' => $sale['orderNumber'],
+            'shippingAddress' => $sale['customerAddress'],
+            'notes' => $sale['notes'],
+            'customerName' => $sale['customerName'],
+            'customerEmail' => $sale['customerEmail'],
+            'customerPhone' => $sale['customerPhone'],
             'customer' => [
-                // Fallback to guest details if not an authenticated customer
-                'name' => $sale['firstName'] ? $sale['firstName'] . ' ' . $sale['lastName'] : $sale['customerName'],
-                'email' => $sale['registeredEmail'] ?? $sale['customerEmail'],
+                'name' => $sale['customerName'],
+                'email' => $sale['customerEmail'],
                 'phone' => $sale['customerPhone']
             ],
             'shipping' => [
-                'address' => $sale['shippingAddress'],
-                'city' => $sale['shippingCity'],
+                'address' => $sale['customerAddress'],
                 'notes' => $sale['notes']
             ],
             'totals' => [
                 'usd' => (float)$sale['totalUsd'],
                 'ves' => (float)$sale['totalVes'],
-                'exchangeRate' => (float)$sale['exchangeRate']
+                'exchangeRate' => (float)($sale['exchangeRate'] ?? 0)
             ],
             'status' => $sale['status'],
             'paymentMethod' => $sale['paymentMethod'],
-            'referenceNumber' => $sale['referenceNumber'],
+            'referenceNumber' => $sale['bankReference'] ?? $sale['referenceNumber'] ?? '',
             'createdAt' => $sale['createdAt'],
             'items' => $formattedItems
         ];

@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { Save, RefreshCw, Check, DollarSign } from "lucide-react";
 import { Button, Input, Card } from "@/components/ui";
 import { formatDateTime } from "@/lib/utils";
+import { phpFetch } from "@/lib/php-client";
 import type { Settings } from "@/types";
 
 export function SettingsForm() {
@@ -35,22 +36,23 @@ export function SettingsForm() {
   const fetchSettings = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch("/api/admin/settings");
+      const response = await phpFetch("admin/settings/get.php");
       const data = await response.json();
 
       if (response.ok) {
-        setSettings(data);
-        setExchangeRate(data.exchangeRateUsdToVes.toString());
-        setStoreName(data.storeName);
-        setStoreDescription(data.storeDescription || "");
-        setWhatsappNumber(data.whatsappNumber || "");
-        setMercantilApiUrl(data.mercantilApiUrl || "");
-        setMercantilApiPath(data.mercantilApiPath || "");
-        setMercantilApiKey(data.mercantilApiKey || "");
-        setMercantilApiSecret(data.mercantilApiSecret || "");
-        setMercantilMasterKey(data.mercantilMasterKey || "");
-        setMercantilIdComercio(data.mercantilIdComercio || "");
-        setMercantilWebhookUrl(data.mercantilWebhookUrl || "");
+        const s = data.settings || data;
+        setSettings(s);
+        setExchangeRate((s.exchangeRateUsdToVes || 40).toString());
+        setStoreName(s.storeName || "");
+        setStoreDescription(s.storeDescription || "");
+        setWhatsappNumber(s.whatsappNumber || "");
+        setMercantilApiUrl(s.mercantilApiUrl || "");
+        setMercantilApiPath(s.mercantilApiPath || "");
+        setMercantilApiKey(s.mercantilApiKey || "");
+        setMercantilApiSecret(s.mercantilApiSecret || "");
+        setMercantilMasterKey(s.mercantilMasterKey || "");
+        setMercantilIdComercio(s.mercantilIdComercio || "");
+        setMercantilWebhookUrl(s.mercantilWebhookUrl || "");
       }
     } catch (error) {
       console.error("Error fetching settings:", error);
@@ -65,7 +67,7 @@ export function SettingsForm() {
     setSuccess(false);
 
     try {
-      const response = await fetch("/api/admin/settings", {
+      const response = await phpFetch("admin/settings/update.php", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -86,7 +88,7 @@ export function SettingsForm() {
       const data = await response.json();
 
       if (response.ok) {
-        setSettings(data);
+        setSettings(data.settings || data);
         setSuccess(true);
         setTimeout(() => setSuccess(false), 3000);
       } else {
@@ -336,7 +338,7 @@ export function SettingsForm() {
                 setTestResult(null);
                 setIsTesting(true);
                 try {
-                  const res = await fetch("/api/admin/test-mercantil");
+                  const res = await phpFetch("admin/settings/test-mercantil.php");
                   const data = await res.json();
                   setTestResult({
                     ok: data.ok === true,

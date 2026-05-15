@@ -13,8 +13,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 
 try {
     $search = $_GET['search'] ?? '';
-    $categoryId = $_GET['category'] ?? '';
-    $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 50;
+    $categoryId = $_GET['category'] ?? $_GET['categoryId'] ?? '';
+    $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 200;
     
     $where = [];
     $params = [];
@@ -33,9 +33,10 @@ try {
 
     $query = "
         SELECT 
-            p.id, p.code, p.name, p.slug, p.images, p.isActive, p.createdAt,
-            c.name as categoryName, c.id as categoryId,
-            pr.priceUsd, i.stock
+            p.id, p.code, p.name, p.slug, p.images, p.isActive, p.createdAt, p.categoryId,
+            c.name as categoryName, c.slug as categorySlug,
+            pr.priceUsd, pr.priceVes, pr.manualVes,
+            i.stock
         FROM Product p
         JOIN Category c ON p.categoryId = c.id
         LEFT JOIN Pricing pr ON p.id = pr.productId
@@ -57,18 +58,42 @@ try {
     foreach ($productsRaw as $row) {
         $formattedProducts[] = [
             'id' => $row['id'],
-            'codigo' => $row['code'],
-            'nombre' => $row['name'],
-            'imagen' => (json_decode($row['images'], true)[0] ?? '/placeholder.svg'),
-            'categoria' => ['id' => $row['categoryId'], 'name' => $row['categoryName']],
-            'precio' => (float)$row['priceUsd'],
-            'stock' => (int)$row['stock'],
-            'activo' => (bool)$row['isActive'],
+            'code' => $row['code'],
+            'name' => $row['name'],
+            'slug' => $row['slug'],
+            'images' => json_decode($row['images'], true) ?: [],
+            'isActive' => (bool)$row['isActive'],
+            'categoryId' => $row['categoryId'],
+            'category' => [
+                'id' => $row['categoryId'],
+                'name' => $row['categoryName'],
+                'slug' => $row['categorySlug']
+            ],
+            'pricing' => [
+                'priceUsd' => (float)($row['priceUsd'] ?? 0),
+                'priceVes' => $row['priceVes'] !== null ? (float)$row['priceVes'] : null,
+                'manualVes' => (bool)($row['manualVes'] ?? false)
+            ],
+            'inventory' => [
+                'stock' => (int)($row['stock'] ?? 0)
+            ],
             'createdAt' => $row['createdAt']
         ];
     }
 
-    echo json_encode(['products' => $formattedProducts]);
+    $catStmt = $pdo->query('SELECT id, name, slug FROM Category ORDER BY name ASC');
+    $categories = $catStmt->fetchAll();
+
+    $settingsStmt = $pdo->query("SELECT exchangeRateUsdToVes FROM Settings WHERE id = 'main'");
+    $settingsRow = $settingsStmt->fetch();
+
+    echo json_encode([
+        'products' => $formattedProducts,
+        'categories' => $categories,
+        'settings' => [
+            'exchangeRateUsdToVes' => $settingsRow ? (float)$settingsRow['exchangeRateUsdToVes'] : 40
+        ]
+    ]);
 
 } catch (\PDOException $e) {
     http_response_code(500);

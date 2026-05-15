@@ -1,40 +1,30 @@
 <?php
 // db.php - Database connection using PDO
+//
+// CORS is handled exclusively by Apache via .htaccess (mod_headers).
+// This guarantees the headers are present even on 4xx/5xx responses before PHP runs.
+// DO NOT add CORS headers here — Apache would append a duplicate and break CORS.
 
-// --- CORS: allow credentials from known origins
-$allowedOrigins = [
-    'http://localhost:3000',     // Next.js dev
-    'http://localhost:5173',     // Vite dev
-    'http://localhost:5174',     // Vite dev (alternate)
-    'http://127.0.0.1:3000',     // Next.js dev
-    'http://localhost',          // XAMPP
-    'http://127.0.0.1',          // XAMPP
-    'https://houmi.vercel.app',  // Vercel
-    'https://houmi-store-xi.vercel.app', 
-    'https://www.houmi.shop',    
-    'https://houmi.shop',        
-    'https://api.houmi.shop',
-    'https://site.houmi.shop',   // Nuevo subdominio Frontend
-];
-
-$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
-// Cualquier preview/deploy en *.vercel.app (HTTPS)
-$isVercelApp = $origin !== '' && preg_match('#^https://[^/]+\.vercel\.app$#i', $origin) === 1;
-
-if (in_array($origin, $allowedOrigins, true) || $isVercelApp) {
-    header("Access-Control-Allow-Origin: $origin");
-} elseif ($origin === '') {
-    // Peticiones sin cabecera Origin (curl, algunos proxies): solo dev
-    header("Access-Control-Allow-Origin: http://localhost:3000");
-}
-// Si Origin viene pero no está permitido, no enviar ACAO equivocado (el navegador exige coincidencia exacta)
-header("Access-Control-Allow-Credentials: true");
-header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Authorization, Cookie");
 header("Content-Type: application/json; charset=UTF-8");
 
-// Handle preflight OPTIONS requests for CORS
+// Preflight fallback for environments where Apache mod_headers may be absent (e.g. legacy XAMPP)
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+    $allowedOrigins = [
+        'http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174',
+        'http://127.0.0.1:3000', 'http://localhost', 'http://127.0.0.1',
+        'https://houmi.vercel.app', 'https://houmi-store-xi.vercel.app',
+        'https://www.houmi.shop', 'https://houmi.shop',
+        'https://api.houmi.shop', 'https://site.houmi.shop',
+    ];
+    $isAllowed = in_array($origin, $allowedOrigins, true)
+        || preg_match('#^https://[^/]+\.vercel\.app$#i', $origin) === 1;
+    if ($isAllowed) {
+        header("Access-Control-Allow-Origin: $origin");
+        header("Access-Control-Allow-Credentials: true");
+        header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
+        header("Access-Control-Allow-Headers: Content-Type, Authorization, Cookie");
+    }
     http_response_code(204);
     exit();
 }

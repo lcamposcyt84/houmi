@@ -1,16 +1,12 @@
 <?php
-// import.php - Read Catalog XLSX and Upsert Data, or Download Template
 require_once dirname(dirname(__DIR__)) . '/db.php';
 require_once dirname(__DIR__) . '/auth.php';
-
-// Load lightweight simple XLSX parsers (zero-dependency)
 require_once dirname(__DIR__) . '/lib/SimpleXLSX.php';
 require_once dirname(__DIR__) . '/lib/SimpleXLSXGen.php';
 
 $admin = requireAdminAuth();
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    // GENERATE TEMPLATE
     try {
         $stmt = $pdo->query('
             SELECT p.code, p.name, p.description, c.name as categoryName, i.stock, pr.priceUsd 
@@ -50,7 +46,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Parse Uploaded File
     if (!isset($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
         http_response_code(400);
         echo json_encode(['error' => 'No se proporcionó archivo']);
@@ -71,14 +66,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $header = array_map('strtoupper', array_map('trim', $rows[0]));
         $expected = ['CODIGO', 'NOMBRE', 'DESCRIPCION', 'CATEGORIA', 'STOCK', 'PRECIO_USD'];
         
-        // Load categories beforehand
         $catStmt = $pdo->query('SELECT id, name, slug FROM Category');
         $categories = $catStmt->fetchAll();
-        $catMap = []; // lowercase name => id
-        $catSlugMap = []; // id => slug
+        $catMap = [];
+        $catSlugMap = [];
+        $defaultCatId = null;
         foreach ($categories as $c) {
-            $catMap[strtolower($c['name'])] = $c['id'];
+            $key = strtolower(trim($c['name']));
+            $catMap[$key] = $c['id'];
             $catSlugMap[$c['id']] = $c['slug'];
+            if (!$defaultCatId) $defaultCatId = $c['id'];
         }
 
         $results = [
@@ -93,7 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             for ($i = 1; $i < count($rows); $i++) {
                 $row = $rows[$i];
-                if (empty(trim($row[0]))) continue; // Skip empty codes
+                if (empty(trim($row[0]))) continue;
 
                 $codigo = strtoupper(trim($row[0] ?? ''));
                 $nombre = trim($row[1] ?? $codigo);
@@ -103,32 +100,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $precioUsd = (float)($row[5] ?? 0);
 
                 if (empty($categoriaName) || !isset($catMap[$categoriaName])) {
-                    $results['errors'][] = "Fila " . ($i + 1) . ": Categoría '$categoriaName' no existe para código $codigo";
-                    $results['skipped']++;
-                    continue;
-                }
+                    $checkStmt = $pdo->prepare('SELECT id, categoryId FROM Product WHERE code = :code LIMIT 1');
+                    $checkStmt->execute([':code' => $codigo]);
+                    $existing = $checkStmt->fetch();
 
-                $catId = $catMap[$categoriaName];
+                    if ($existing) {
+                        $catId = $existing['categoryId'];
+                    } else {
+                        $catId = $defaultCatId;
+                        if (!$catId) {
+                            $results['errors'][] = "Fila " . ($i + 1) . ": Sin categoría y no hay default para código $codigo";
+                            $results['skipped']++;
+                            continue;
+                        }
+                    }
+                } else {
+                    $catId = $catMap[$categoriaName];
+                    $checkStmt = $pdo->prepare('SELECT id FROM Product WHERE code = :code LIMIT 1');
+                    $checkStmt->execute([':code' => $codigo]);
+                    $existing = $checkStmt->fetch();
+                }
                 $catSlug = $catSlugMap[$catId];
                 $slug = strtolower($codigo) . "-" . $catSlug;
 
-                // Check if product exists
-                $checkStmt = $pdo->prepare('SELECT id FROM Product WHERE code = :code LIMIT 1');
-                $checkStmt->execute([':code' => $codigo]);
-                $existing = $checkStmt->fetch();
-
                 if ($existing) {
                     $productId = $existing['id'];
-                    // Update Product
                     $updStmt = $pdo->prepare('UPDATE Product SET name = :name, description = :desc, categoryId = :catId, slug = :slug WHERE id = :id');
                     $updStmt->execute([':name' => $nombre, ':desc' => $descripcion, ':catId' => $catId, ':slug' => $slug, ':id' => $productId]);
 
-                    // Update/Insert Inventory
                     $invStmt = $pdo->prepare('INSERT INTO Inventory (id, productId, stock) VALUES (:id, :pId, :stock) ON DUPLICATE KEY UPDATE stock = :stock2');
                     $invIt = 'inv_' . bin2hex(random_bytes(8));
                     $invStmt->execute([':id' => $invIt, ':pId' => $productId, ':stock' => $stock, ':stock2' => $stock]);
 
-                    // Update/Insert Pricing
                     $prcStmt = $pdo->prepare('INSERT INTO Pricing (id, productId, priceUsd) VALUES (:id, :pId, :usd) ON DUPLICATE KEY UPDATE priceUsd = :usd2');
                     $prcIt = 'prc_' . bin2hex(random_bytes(8));
                     $prcStmt->execute([':id' => $prcIt, ':pId' => $productId, ':usd' => $precioUsd, ':usd2' => $precioUsd]);
@@ -137,7 +140,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 } else {
                     $productId = 'prd_' . bin2hex(random_bytes(8));
                     
-                    // Insert Product
                     $insStmt = $pdo->prepare('INSERT INTO Product (id, code, name, slug, description, images, categoryId, isActive, createdAt, updatedAt) VALUES (:id, :code, :name, :slug, :desc, :images, :catId, 1, NOW(), NOW())');
                     $insStmt->execute([
                         ':id' => $productId, ':code' => $codigo, ':name' => $nombre, 
@@ -145,11 +147,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         ':catId' => $catId
                     ]);
 
-                    // Insert Inventory
                     $invIt = 'inv_' . bin2hex(random_bytes(8));
                     $pdo->prepare('INSERT INTO Inventory (id, productId, stock) VALUES (?, ?, ?)')->execute([$invIt, $productId, $stock]);
 
-                    // Insert Pricing
                     $prcIt = 'prc_' . bin2hex(random_bytes(8));
                     $pdo->prepare('INSERT INTO Pricing (id, productId, priceUsd) VALUES (?, ?, ?)')->execute([$prcIt, $productId, $precioUsd]);
 

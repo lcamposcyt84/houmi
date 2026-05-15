@@ -1,12 +1,12 @@
 
 import { useState, useRef } from "react";
+import { phpFetch } from "@/lib/php-client";
 import {
   Upload,
   Download,
   FileSpreadsheet,
   CheckCircle,
   AlertCircle,
-  Loader2,
   RefreshCw,
   Info,
 } from "lucide-react";
@@ -65,7 +65,7 @@ export function ImportExcelForm() {
       const formData = new FormData();
       formData.append("file", file);
 
-      const response = await fetch("/api/admin/import-excel", {
+      const response = await phpFetch("admin/catalog/import.php", {
         method: "POST",
         body: formData,
       });
@@ -91,7 +91,7 @@ export function ImportExcelForm() {
 
   const handleDownloadTemplate = async () => {
     try {
-      const response = await fetch("/api/admin/import-excel");
+      const response = await phpFetch("admin/catalog/import.php");
       
       if (!response.ok) {
         throw new Error("Error al descargar plantilla");
@@ -117,7 +117,7 @@ export function ImportExcelForm() {
     setSuccess("");
 
     try {
-      const response = await fetch("/api/admin/fix-slugs", {
+      const response = await phpFetch("admin/catalog/fix-slugs.php", {
         method: "POST",
       });
 

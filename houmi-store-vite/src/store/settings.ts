@@ -1,6 +1,7 @@
 
 import { create } from "zustand";
 import type { Settings } from "@/types";
+import { phpFetch } from "@/lib/php-client";
 
 interface SettingsState {
   settings: Settings | null;
@@ -26,14 +27,14 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     set({ isLoading: true, error: null });
     
     try {
-      const response = await fetch("/api/settings");
+      const response = await phpFetch("admin/settings/get.php");
       
       if (!response.ok) {
         throw new Error("Failed to fetch settings");
       }
       
       const data = await response.json();
-      set({ settings: data, isLoading: false });
+      set({ settings: data.settings, isLoading: false });
     } catch (error) {
       set({
         error: error instanceof Error ? error.message : "Unknown error",
@@ -43,15 +44,11 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   },
 
   updateExchangeRate: async (rate: number) => {
-    const { settings } = get();
-    if (!settings) return;
-
     set({ isLoading: true, error: null });
 
     try {
-      const response = await fetch("/api/admin/settings", {
+      const response = await phpFetch("admin/settings/update.php", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ exchangeRateUsdToVes: rate }),
       });
 
@@ -60,7 +57,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       }
 
       const data = await response.json();
-      set({ settings: data, isLoading: false });
+      set({ settings: data.settings, isLoading: false });
     } catch (error) {
       set({
         error: error instanceof Error ? error.message : "Unknown error",

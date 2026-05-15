@@ -5,10 +5,14 @@
  * - Desarrollo: XAMPP según ruta del repo.
  */
 export function getPhpApiBaseUrl(): string {
-  const fromEnv = import.meta.env.VITE_API_URL?.trim();
-  if (fromEnv) return fromEnv.replace(/\/$/, "");
+  // Fuerza la URL de producción cuando se ejecuta `npm run build`
   if (import.meta.env.PROD) {
     return "https://api.houmi.shop";
   }
+
+  // De lo contrario usa variables de entorno local o localhost estricto
+  const fromEnv = import.meta.env.VITE_API_URL?.trim();
+  if (fromEnv) return fromEnv.replace(/\/$/, "");
+  
   return "http://localhost/houmi-master/houmi-store/api";
 }
