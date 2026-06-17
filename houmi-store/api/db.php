@@ -1,30 +1,33 @@
 <?php
 // db.php - Database connection using PDO
 //
-// CORS is handled exclusively by Apache via .htaccess (mod_headers).
-// This guarantees the headers are present even on 4xx/5xx responses before PHP runs.
-// DO NOT add CORS headers here — Apache would append a duplicate and break CORS.
+// CORS headers are set here in PHP for maximum compatibility with shared hosting
+// (Hostinger mod_headers may not apply correctly on all response types).
 
 header("Content-Type: application/json; charset=UTF-8");
 
-// Preflight fallback for environments where Apache mod_headers may be absent (e.g. legacy XAMPP)
+// ── CORS for every request ────────────────────────────────────────────────────
+$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+$allowedOrigins = [
+    'http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174',
+    'http://127.0.0.1:3000', 'http://localhost', 'http://127.0.0.1',
+    'https://houmi.vercel.app', 'https://houmi-store-xi.vercel.app',
+    'https://www.houmi.shop', 'https://houmi.shop',
+    'https://api.houmi.shop', 'https://site.houmi.shop',
+];
+$isAllowed = in_array($origin, $allowedOrigins, true)
+    || preg_match('#^https://[^/]+\.vercel\.app$#i', $origin) === 1;
+
+if ($isAllowed) {
+    header("Access-Control-Allow-Origin: $origin");
+    header("Access-Control-Allow-Credentials: true");
+    header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
+    header("Access-Control-Allow-Headers: Content-Type, Authorization, Cookie");
+    header("Vary: Origin");
+}
+
+// Handle OPTIONS preflight — respond immediately without hitting the DB
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
-    $allowedOrigins = [
-        'http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174',
-        'http://127.0.0.1:3000', 'http://localhost', 'http://127.0.0.1',
-        'https://houmi.vercel.app', 'https://houmi-store-xi.vercel.app',
-        'https://www.houmi.shop', 'https://houmi.shop',
-        'https://api.houmi.shop', 'https://site.houmi.shop',
-    ];
-    $isAllowed = in_array($origin, $allowedOrigins, true)
-        || preg_match('#^https://[^/]+\.vercel\.app$#i', $origin) === 1;
-    if ($isAllowed) {
-        header("Access-Control-Allow-Origin: $origin");
-        header("Access-Control-Allow-Credentials: true");
-        header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
-        header("Access-Control-Allow-Headers: Content-Type, Authorization, Cookie");
-    }
     http_response_code(204);
     exit();
 }

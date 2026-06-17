@@ -1,5 +1,6 @@
 
 import { useState } from "react";
+import { phpFetch } from "@/lib/php-client";
 import { Link } from "react-router-dom";
 import { Card, Button } from "@/components/ui";
 import { Search, Plus, Wallet, Trash2 } from "lucide-react";
@@ -65,7 +66,7 @@ export function ExpensesTable({ expenses, exchangeRate }: ExpensesTableProps) {
     if (!confirm("¿Estás seguro de eliminar este gasto?")) return;
 
     try {
-      const response = await fetch(`/api/admin/expenses/${id}`, {
+      const response = await phpFetch("admin/expenses/update.php", {
         method: "DELETE",
       });
       if (response.ok) {

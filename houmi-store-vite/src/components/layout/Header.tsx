@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Menu, X, ShoppingCart, Search, UserCircle, LogIn, ArrowRight, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCartStore } from "@/store/cart";
-import { phpFetch, clearToken } from "@/lib/php-client";
+import { useAuth } from "@/contexts/AuthContext";
 
 const navigation = [
   { name: "Inicio", href: "/" },
@@ -17,17 +17,8 @@ export function Header() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const { getTotalItems, openCart } = useCartStore();
+  const { customer, logout: authLogout } = useAuth();
   const [mounted, setMounted] = useState(false);
-  const [customer, setCustomer] = useState<{ firstName: string; email: string } | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-    // Check customer session silently
-    phpFetch("auth/me")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => { if (data?.customer) setCustomer(data.customer); })
-      .catch(() => {});
-  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -51,9 +42,7 @@ export function Header() {
   const totalItems = mounted ? getTotalItems() : 0;
 
   const handleLogout = async () => {
-    clearToken();
-    await phpFetch("auth/logout", { method: "POST" });
-    setCustomer(null);
+    authLogout();
     navigate("/");
   };
 

@@ -23,7 +23,8 @@ try {
 
     $allowedFields = [
         'storeName', 'storeDescription', 'exchangeRateUsdToVes', 'whatsappNumber',
-        'mercantilApiUrl', 'mercantilIdComercio', 'mercantilClavePublica', 'mercantilToken'
+        'mercantilApiUrl', 'mercantilIdComercio', 'mercantilClavePublica', 'mercantilToken',
+        'paymentGatewayUrl', 'paymentMerchantId', 'paymentIntegratorId', 'paymentEncryptionKey'
     ];
 
     foreach ($allowedFields as $field) {

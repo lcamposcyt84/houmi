@@ -1,0 +1,42 @@
+==============================================================================
+ HTACCESS PARA PRODUCCIÓN — api.houmi.shop
+==============================================================================
+ Instrucciones:
+ 1. Conéctate por FTP a Hostinger
+ 2. Navega a: /home/u111276354/domains/houmi.shop/public_html/api/
+ 3. Reemplaza el .htaccess existente con este contenido
+ 4. Guarda y espera 2-3 minutos a que LiteSpeed refresque
+ 5. Borra debug_cors.php (ya no se necesita)
+==============================================================================
+
+# Prevenir listado de directorios
+Options -Indexes
+
+# ── CORS ──────────────────────────────────────────────────────────────────────
+# Los headers CORS se manejan EXCLUSIVAMENTE desde PHP (db.php).
+#
+# Motivos:
+#   - Hostinger usa LiteSpeed, donde SetEnvIf + Header %{VAR}e no siempre
+#     propaga la variable de entorno a la fase de headers correctamente.
+#   - El CORS desde PHP es 100% fiable y evita cabeceras duplicadas.
+#   - El frontend usa JWT (Authorization: Bearer), no cookies,
+#     por lo que no necesita credentials mode.
+#
+# ⚠️  Este archivo debe ser idéntico en local y en producción.
+#     NO agregar bloques <IfModule mod_headers.c> con CORS aquí.
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # CORS preflight OPTIONS: se pasa a PHP (db.php) que responde con 204 + CORS
+    # (No hay RewriteRule para OPTIONS aquí — PHP los maneja con los headers CORS correctos)
+
+    # Permitir que los headers de Authorization (Bearer Token) lleguen a PHP
+    RewriteCond %{HTTP:Authorization} ^(.*)
+    RewriteRule .* - [e=HTTP_AUTHORIZATION:%1]
+
+    # Si el archivo o directorio no existe, redirigir a index.php
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ index.php [QSA,L]
+</IfModule>

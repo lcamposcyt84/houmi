@@ -1,5 +1,6 @@
 
 import { useState } from "react";
+import { phpFetch } from "@/lib/php-client";
 import { Card, Button } from "@/components/ui";
 import {
   Search,
@@ -89,7 +90,7 @@ export function OrdersTable({ orders, exchangeRate }: OrdersTableProps) {
 
   const handleStatusChange = async (orderId: string, newStatus: string) => {
     try {
-      const response = await fetch(`/api/admin/orders/${orderId}`, {
+      const response = await phpFetch("admin/orders/update.php", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),

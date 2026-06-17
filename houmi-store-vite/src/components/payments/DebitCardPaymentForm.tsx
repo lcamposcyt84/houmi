@@ -1,6 +1,6 @@
-
 import { useState } from "react";
 import { ArrowLeft, Loader2, Lock } from "lucide-react";
+import { phpFetch } from "@/lib/php-client";
 
 interface DebitCardPaymentFormProps {
   orderNumber: string;
@@ -96,10 +96,10 @@ export function DebitCardPaymentForm({
     try {
       const cardNumberClean = formData.cardNumber.replace(/\s/g, "");
       
-      const response = await fetch("/api/payments/debit", {
+      const response = await phpFetch("payments/mercantil_direct.php", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          methodType: "debit",
           orderNumber,
           cardNumber: cardNumberClean,
           cardHolder: formData.cardHolder,
@@ -131,22 +131,17 @@ export function DebitCardPaymentForm({
       <button
         type="button"
         onClick={onBack}
-        className="flex items-center gap-2 text-white/70 hover:text-white transition-colors text-sm"
+        className="flex items-center gap-2 text-[#0072CE] hover:underline transition-colors text-sm font-medium mb-6"
       >
         <ArrowLeft className="w-4 h-4" />
-        Volver
+        Volver a la selección de métodos
       </button>
 
-      <div>
-        <h2 className="text-xl font-bold text-white mb-2">Métodos de Pago</h2>
-        <p className="text-sm text-white/70">Completa los datos de tu tarjeta de débito</p>
-      </div>
-
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-5">
         {/* Card Number */}
         <div>
-          <label className="block text-sm font-medium text-white mb-2">
-            Número de tarjeta
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Número de tarjeta *
           </label>
           <input
             type="text"
@@ -154,35 +149,35 @@ export function DebitCardPaymentForm({
             onChange={(e) => handleChange("cardNumber", e.target.value)}
             placeholder="1234 5678 9012 3456"
             maxLength={19}
-            className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-[#F7C72C] focus:border-[#F7C72C]"
+            className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0072CE] focus:border-[#0072CE]"
           />
           {errors.cardNumber && (
-            <p className="mt-1 text-sm text-red-400">{errors.cardNumber}</p>
+            <p className="mt-1 text-sm text-red-500">{errors.cardNumber}</p>
           )}
         </div>
 
         {/* Card Holder */}
         <div>
-          <label className="block text-sm font-medium text-white mb-2">
-            Nombre del titular
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Nombre impreso en la tarjeta *
           </label>
           <input
             type="text"
             value={formData.cardHolder}
             onChange={(e) => handleChange("cardHolder", e.target.value.toUpperCase())}
             placeholder="JUAN PEREZ"
-            className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-[#F7C72C] focus:border-[#F7C72C]"
+            className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0072CE] focus:border-[#0072CE]"
           />
           {errors.cardHolder && (
-            <p className="mt-1 text-sm text-red-400">{errors.cardHolder}</p>
+            <p className="mt-1 text-sm text-red-500">{errors.cardHolder}</p>
           )}
         </div>
 
         {/* Expiry and CVV */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-white mb-2">
-              Vencimiento
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Fecha de vencimiento *
             </label>
             <div className="flex gap-2">
               <input
@@ -191,24 +186,25 @@ export function DebitCardPaymentForm({
                 onChange={(e) => handleChange("expiryMonth", e.target.value)}
                 placeholder="MM"
                 maxLength={2}
-                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-[#F7C72C] focus:border-[#F7C72C]"
+                className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0072CE] focus:border-[#0072CE] text-center"
               />
+              <span className="flex items-center text-gray-400">/</span>
               <input
                 type="text"
                 value={formData.expiryYear}
                 onChange={(e) => handleChange("expiryYear", e.target.value)}
                 placeholder="YY"
                 maxLength={2}
-                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-[#F7C72C] focus:border-[#F7C72C]"
+                className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0072CE] focus:border-[#0072CE] text-center"
               />
             </div>
             {errors.expiry && (
-              <p className="mt-1 text-sm text-red-400">{errors.expiry}</p>
+              <p className="mt-1 text-sm text-red-500">{errors.expiry}</p>
             )}
           </div>
           <div>
-            <label className="block text-sm font-medium text-white mb-2">
-              CVV
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Código CVV *
             </label>
             <input
               type="text"
@@ -216,60 +212,62 @@ export function DebitCardPaymentForm({
               onChange={(e) => handleChange("cvv", e.target.value)}
               placeholder="123"
               maxLength={4}
-              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-[#F7C72C] focus:border-[#F7C72C]"
+              className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0072CE] focus:border-[#0072CE]"
             />
             {errors.cvv && (
-              <p className="mt-1 text-sm text-red-400">{errors.cvv}</p>
+              <p className="mt-1 text-sm text-red-500">{errors.cvv}</p>
             )}
           </div>
         </div>
 
         {/* ID Number */}
         <div>
-          <label className="block text-sm font-medium text-white mb-2">
-            Cédula de identidad
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Cédula de identidad titular *
           </label>
           <input
             type="text"
             value={formData.idNumber}
-            onChange={(e) => handleChange("idNumber", e.target.value)}
+            onChange={(e) => handleChange("idNumber", e.target.value.replace(/\D/g, ""))}
             placeholder="12345678"
             maxLength={9}
-            className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-[#F7C72C] focus:border-[#F7C72C]"
+            className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0072CE] focus:border-[#0072CE]"
           />
           {errors.idNumber && (
-            <p className="mt-1 text-sm text-red-400">{errors.idNumber}</p>
+            <p className="mt-1 text-sm text-red-500">{errors.idNumber}</p>
           )}
         </div>
 
         {/* Security notice */}
-        <div className="flex items-start gap-3 p-3 bg-white/5 border border-white/10 rounded-lg">
-          <Lock className="w-5 h-5 text-[#F7C72C] shrink-0 mt-0.5" />
-          <p className="text-xs text-white/70">
+        <div className="flex items-start gap-3 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+          <Lock className="w-5 h-5 text-gray-500 shrink-0 mt-0.5" />
+          <p className="text-sm text-gray-600">
             Tus datos están protegidos con encriptación SSL. No almacenamos información de tu tarjeta.
           </p>
         </div>
 
         {errors.general && (
-          <div className="p-3 bg-red-500/20 border border-red-500/50 rounded-lg">
-            <p className="text-sm text-red-400">{errors.general}</p>
+          <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-sm text-red-600">{errors.general}</p>
           </div>
         )}
 
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="w-full py-4 bg-gradient-to-r from-[#F7C72C] to-[#FFD95A] text-[#1B3A6D] font-bold rounded-lg hover:from-[#FFD95A] hover:to-[#F7C72C] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-        >
-          {isSubmitting ? (
-            <>
-              <Loader2 className="w-5 h-5 animate-spin" />
-              Procesando...
-            </>
-          ) : (
-            "Pagar"
-          )}
-        </button>
+        <div className="pt-4 mt-8 border-t border-gray-100 flex justify-end">
+           <button
+            type="submit"
+            disabled={isSubmitting}
+            className="px-10 py-3 bg-[#0072CE] hover:bg-[#005ba3] text-white font-bold rounded-full transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Procesando
+              </>
+            ) : (
+              "Pagar"
+            )}
+           </button>
+        </div>
       </form>
     </div>
   );

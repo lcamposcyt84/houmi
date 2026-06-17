@@ -6,6 +6,7 @@ import { Search, Save, Check, X, Loader2, Edit, Plus } from "lucide-react";
 import { Input, Select, Button, Badge, Card } from "@/components/ui";
 import { formatUSD, formatBs } from "@/lib/currency";
 import type { Category } from "@/types";
+import { phpFetch } from "@/lib/php-client";
 
 interface Product {
   id: string;
@@ -43,7 +44,7 @@ export function ProductsTable() {
       if (search) params.set("search", search);
       if (categoryFilter) params.set("categoryId", categoryFilter);
 
-      const response = await fetch(`/api/admin/products?${params.toString()}`);
+      const response = await phpFetch(`admin/products/get.php?${params.toString()}`);
       const data = await response.json();
 
       if (response.ok) {
@@ -87,7 +88,7 @@ export function ProductsTable() {
 
     setSaving(productId);
     try {
-      const response = await fetch("/api/admin/products", {
+      const response = await phpFetch("admin/products/update.php", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ productId, ...cleanedChanges }),

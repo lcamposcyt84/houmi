@@ -1,0 +1,32 @@
+# Prevenir listado de directorios
+Options -Indexes
+
+# ── CORS a nivel Apache ───────────────────────────────────────────────────────
+# Se envían ANTES de que PHP corra, así el navegador los recibe incluso en 401/500
+<IfModule mod_headers.c>
+    SetEnvIf Origin "^https://(site\.houmi\.shop|houmi\.shop|www\.houmi\.shop|houmi\.vercel\.app|[^/]+\.vercel\.app)$" CORS_ORIGIN=$0
+    SetEnvIf Origin "^http://(localhost|127\.0\.0\.1)(:[0-9]+)?$" CORS_ORIGIN=$0
+
+    Header always set Access-Control-Allow-Origin "%{CORS_ORIGIN}e" env=CORS_ORIGIN
+    Header always set Access-Control-Allow-Credentials "true"
+    Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+    Header always set Access-Control-Allow-Headers "Content-Type, Authorization, Cookie"
+
+    # Responder a preflight OPTIONS sin llegar a PHP
+    RewriteEngine On
+    RewriteCond %{REQUEST_METHOD} OPTIONS
+    RewriteRule ^ - [R=204,L]
+</IfModule>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Permitir que los headers de Authorization (Bearer Token) lleguen a PHP
+    RewriteCond %{HTTP:Authorization} ^(.*)
+    RewriteRule .* - [e=HTTP_AUTHORIZATION:%1]
+
+    # Si el archivo o directorio no existe, redirigir a index.php
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ index.php [QSA,L]
+</IfModule>

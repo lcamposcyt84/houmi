@@ -2,21 +2,18 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui";
+import { clearAdminSession, getAdminSession } from "@/lib/admin-functions";
 
 export function AdminHeader() {
   const navigate = useNavigate();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
+  const session = getAdminSession();
+
   const handleLogout = async () => {
     setIsLoggingOut(true);
-    
-    try {
-      await fetch("/api/admin/logout", { method: "POST" });
-      navigate("/admin/login");
-          } catch (error) {
-      console.error("Logout error:", error);
-      setIsLoggingOut(false);
-    }
+    await clearAdminSession();
+    navigate("/admin/login");
   };
 
   return (
@@ -29,7 +26,7 @@ export function AdminHeader() {
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 text-sm text-gray-600">
             <User className="w-4 h-4" />
-            <span>Admin</span>
+            <span>{session?.email || "Admin"}</span>
           </div>
           <Button
             variant="ghost"
@@ -45,3 +42,4 @@ export function AdminHeader() {
     </header>
   );
 }
+

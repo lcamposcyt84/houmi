@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { phpFetch } from "@/lib/php-client";
 import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Plus, Trash2, Save, Search } from "lucide-react";
@@ -43,8 +44,8 @@ export default function NewSalePage() {
     async function fetchData() {
       try {
         const [productsRes, settingsRes] = await Promise.all([
-          fetch("/api/admin/products"),
-          fetch("/api/settings"),
+          phpFetch("admin/products/get.php"),
+          phpFetch("admin/settings/get.php"),
         ]);
         const productsData = await productsRes.json();
         const settingsData = await settingsRes.json();
@@ -117,7 +118,7 @@ export default function NewSalePage() {
     setError("");
 
     try {
-      const response = await fetch("/api/admin/sales", {
+      const response = await phpFetch("admin/sales/create.php", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

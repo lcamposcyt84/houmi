@@ -24,6 +24,7 @@ try {
     $pdo->beginTransaction();
 
     $saleId = 'sal_' . bin2hex(random_bytes(8));
+    $orderNumber = 'ORD-' . strtoupper(substr(bin2hex(random_bytes(4)), 0, 8));
     $totalUsd = 0;
     $totalVes = 0;
     
@@ -66,6 +67,8 @@ try {
             'id' => 'sit_' . bin2hex(random_bytes(8)),
             'saleId' => $saleId,
             'productId' => $pId,
+            'productName' => $item->productName ?? '',
+            'productCode' => $item->productCode ?? '',
             'quantity' => $qty,
             'priceUsd' => $usd,
             'priceVes' => $ves
@@ -78,34 +81,35 @@ try {
 
     // 2. Insert Sale
     $saleStmt = $pdo->prepare('
-        INSERT INTO Sale (id, customerId, customerName, customerEmail, customerPhone, shippingAddress, shippingCity, notes, exchangeRate, totalUsd, totalVes, status, paymentMethod, createdAt, updatedAt)
-        VALUES (:id, :cId, :name, :email, :phone, :address, :city, :notes, :rate, :tUsd, :tVes, "pending", "transfer_ves", NOW(), NOW())
+        INSERT INTO Sale (id, orderNumber, customerId, customerName, customerEmail, customerPhone, customerAddress, notes, totalUsd, totalVes, status, paymentMethod, createdAt, updatedAt)
+        VALUES (:id, :ord, :cId, :name, :email, :phone, :address, :notes, :tUsd, :tVes, "pending", "transfer_ves", NOW(), NOW())
     ');
     
     $saleStmt->execute([
         ':id' => $saleId,
+        ':ord' => $orderNumber,
         ':cId' => $customer ? $customer['customerId'] : null,
         ':name' => $data->customerName,
         ':email' => $data->customerEmail,
         ':phone' => $data->customerPhone ?? '',
-        ':address' => $data->shippingAddress ?? '',
-        ':city' => $data->shippingCity ?? '',
+        ':address' => $data->customerAddress ?? '',
         ':notes' => $data->notes ?? null,
-        ':rate' => $exchangeRate,
         ':tUsd' => $totalUsd,
         ':tVes' => $totalVes
     ]);
 
     // 3. Insert SaleItems
     $itemStmt = $pdo->prepare('
-        INSERT INTO SaleItem (id, saleId, productId, quantity, priceUsd, priceVes, createdAt, updatedAt)
-        VALUES (:id, :sId, :pId, :qty, :pUsd, :pVes, NOW(), NOW())
+        INSERT INTO SaleItem (id, saleId, productId, productName, productCode, quantity, priceUsd, priceVes, createdAt)
+        VALUES (:id, :sId, :pId, :pName, :pCode, :qty, :pUsd, :pVes, NOW())
     ');
     foreach ($itemsToInsert as $item) {
         $itemStmt->execute([
             ':id' => $item['id'],
             ':sId' => $item['saleId'],
             ':pId' => $item['productId'],
+            ':pName' => $item['productName'],
+            ':pCode' => $item['productCode'],
             ':qty' => $item['quantity'],
             ':pUsd' => $item['priceUsd'],
             ':pVes' => $item['priceVes']
@@ -115,7 +119,7 @@ try {
     $pdo->commit();
 
     http_response_code(201);
-    echo json_encode(['success' => true, 'order' => ['id' => $saleId]]);
+    echo json_encode(['success' => true, 'order' => ['id' => $saleId], 'orderNumber' => $orderNumber]);
 
 } catch (Exception $e) {
     $pdo->rollBack();

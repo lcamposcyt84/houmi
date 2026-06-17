@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from "react";
+import { phpFetch } from "@/lib/php-client";
 import { Percent, AlertTriangle, Check, ArrowUp, ArrowDown } from "lucide-react";
 import { Button, Input, Select, Card } from "@/components/ui";
 import { formatUSD } from "@/lib/currency";
@@ -30,7 +31,7 @@ export function BulkPricingForm() {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch("/api/admin/products");
+      const response = await phpFetch("admin/products/get.php");
       const data = await response.json();
       if (response.ok) {
         setCategories(data.categories);
@@ -52,7 +53,7 @@ export function BulkPricingForm() {
     setSuccess(false);
 
     try {
-      const response = await fetch("/api/admin/bulk-price", {
+      const response = await phpFetch("admin/bulk-price.php", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -83,7 +84,7 @@ export function BulkPricingForm() {
     setError("");
 
     try {
-      const response = await fetch("/api/admin/bulk-price", {
+      const response = await phpFetch("admin/bulk-price.php", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

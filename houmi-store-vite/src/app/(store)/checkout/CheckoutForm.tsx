@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { ShoppingBag, ArrowLeft, CheckCircle, AlertCircle, MessageCircle, CreditCard, Smartphone, UserCircle } from "lucide-react";
 import { useCartStore } from "@/store/cart";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button, Input, Card } from "@/components/ui";
 import { formatUSD, formatBs } from "@/lib/currency";
 import { phpFetch } from "@/lib/php-client";
@@ -37,6 +38,7 @@ interface CustomerSession {
 export function CheckoutForm() {
   const navigate = useNavigate();
   const { items, getTotalUsd, getTotalVes, getTotalItems, clearCart } = useCartStore();
+  const { customer: authCustomer } = useAuth();
   const [mounted, setMounted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
@@ -53,28 +55,24 @@ export function CheckoutForm() {
   });
 
   const [errors, setErrors] = useState<FormErrors>({});
-  const [paymentMethod, setPaymentMethod] = useState<"debit" | "c2p" | "card" | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<"debit" | "c2p" | "card" | "bdv_pago_movil" | null>(null);
 
   useEffect(() => {
     setMounted(true);
-    // Detect logged-in customer and autofill
-    phpFetch("auth/me")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        if (data?.customer) {
-          const c = data.customer;
-          setCustomer(c);
-          // Autofill form with customer data
-          setFormData((prev) => ({
-            ...prev,
-            name: `${c.firstName} ${c.lastName}`.trim(),
-            email: c.email || prev.email,
-            phone: c.phone || prev.phone,
-          }));
-        }
-      })
-      .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (authCustomer) {
+      const c = authCustomer;
+      setCustomer(c);
+      setFormData((prev) => ({
+        ...prev,
+        name: `${c.firstName} ${c.lastName}`.trim(),
+        email: c.email || prev.email,
+        phone: c.phone || prev.phone,
+      }));
+    }
+  }, [authCustomer]);
 
 
   if (!mounted) {
@@ -171,9 +169,8 @@ export function CheckoutForm() {
       }));
 
       // Enviar pedido a la API
-      const response = await fetch("/api/orders", {
+      const response = await phpFetch("orders/create.php", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           customerName: formData.name,
           customerEmail: formData.email,
@@ -197,6 +194,7 @@ export function CheckoutForm() {
       // Save order data to localStorage for payment page
       const orderData = {
         orderNumber: data.orderNumber,
+        paymentMethod,
         items: items.map((item) => ({
           productId: item.productId,
           productName: item.product.name,
@@ -383,7 +381,8 @@ export function CheckoutForm() {
               <h2 className="text-lg font-semibold text-brand-text mb-4">
                 Método de pago
               </h2>
-              <div className="grid md:grid-cols-3 gap-4">
+              <div className="grid md:grid-cols-2 gap-4">
+                {/* --- Mercantil C2P --- */}
                 <button
                   type="button"
                   onClick={() => setPaymentMethod("c2p")}
@@ -394,13 +393,16 @@ export function CheckoutForm() {
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <Smartphone className={`w-6 h-6 ${paymentMethod === "c2p" ? "text-[#F7C72C]" : "text-gray-400"}`} />
+                    <div className="w-10 h-10 rounded-lg bg-[#0072CE]/10 flex items-center justify-center shrink-0">
+                      <Smartphone className={`w-5 h-5 ${paymentMethod === "c2p" ? "text-[#0072CE]" : "text-gray-400"}`} />
+                    </div>
                     <div>
                       <p className="font-medium text-brand-text">Pago Móvil C2P</p>
-                      <p className="text-sm text-brand-text-muted">Pago desde tu móvil</p>
+                      <p className="text-xs text-brand-text-muted">Mercantil Banco</p>
                     </div>
                   </div>
                 </button>
+                {/* --- Mercantil Débito --- */}
                 <button
                   type="button"
                   onClick={() => setPaymentMethod("debit")}
@@ -411,13 +413,36 @@ export function CheckoutForm() {
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <CreditCard className={`w-6 h-6 ${paymentMethod === "debit" ? "text-[#F7C72C]" : "text-gray-400"}`} />
+                    <div className="w-10 h-10 rounded-lg bg-[#0072CE]/10 flex items-center justify-center shrink-0">
+                      <CreditCard className={`w-5 h-5 ${paymentMethod === "debit" ? "text-[#0072CE]" : "text-gray-400"}`} />
+                    </div>
                     <div>
-                      <p className="font-medium text-brand-text">Débito Mercantil</p>
-                      <p className="text-sm text-brand-text-muted">Tarjeta de débito</p>
+                      <p className="font-medium text-brand-text">Débito / Crédito</p>
+                      <p className="text-xs text-brand-text-muted">Mercantil Banco</p>
                     </div>
                   </div>
                 </button>
+                {/* --- BDV Pago Móvil --- */}
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod("bdv_pago_movil")}
+                  className={`p-4 border-2 rounded-lg transition-all text-left ${
+                    paymentMethod === "bdv_pago_movil"
+                      ? "border-[#C8102E] bg-[#C8102E]/10"
+                      : "border-gray-200 hover:border-gray-300"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-[#C8102E]/10 flex items-center justify-center shrink-0">
+                      <Smartphone className={`w-5 h-5 ${paymentMethod === "bdv_pago_movil" ? "text-[#C8102E]" : "text-gray-400"}`} />
+                    </div>
+                    <div>
+                      <p className="font-medium text-brand-text">Botón de Pago</p>
+                      <p className="text-xs text-brand-text-muted">Banco de Venezuela</p>
+                    </div>
+                  </div>
+                </button>
+                {/* --- Tarjeta de Crédito --- */}
                 <button
                   type="button"
                   onClick={() => setPaymentMethod("card")}
@@ -428,25 +453,34 @@ export function CheckoutForm() {
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <CreditCard className={`w-6 h-6 ${paymentMethod === "card" ? "text-[#F7C72C]" : "text-gray-400"}`} />
+                    <div className="w-10 h-10 rounded-lg bg-[#0072CE]/10 flex items-center justify-center shrink-0">
+                      <CreditCard className={`w-5 h-5 ${paymentMethod === "card" ? "text-[#0072CE]" : "text-gray-400"}`} />
+                    </div>
                     <div>
                       <p className="font-medium text-brand-text">Tarjeta de Crédito</p>
-                      <p className="text-sm text-brand-text-muted">Visa o Mastercard</p>
+                      <p className="text-xs text-brand-text-muted">Visa o Mastercard</p>
                     </div>
                   </div>
                 </button>
               </div>
               {paymentMethod && (
-                <div className="mt-4 p-4 bg-[#F7C72C]/10 border border-[#F7C72C]/20 rounded-lg">
+                <div className={`mt-4 p-4 rounded-lg border ${
+                  paymentMethod === "bdv_pago_movil"
+                    ? "bg-[#C8102E]/5 border-[#C8102E]/20"
+                    : "bg-[#F7C72C]/10 border-[#F7C72C]/20"
+                }`}>
                   <p className="text-sm text-brand-text">
                     {paymentMethod === "c2p" && (
-                      <>Serás redirigido a la página de pago para completar tu transacción con Pago Móvil C2P.</>
+                      <>Serás redirigido al formulario de Pago Móvil C2P de Mercantil para completar la transacción.</>
                     )}
                     {paymentMethod === "debit" && (
-                      <>Serás redirigido a la página de pago para completar tu transacción con tarjeta de débito Mercantil.</>
+                      <>Serás redirigido al formulario de tarjeta de débito de Mercantil para completar la transacción.</>
                     )}
                     {paymentMethod === "card" && (
-                      <>Serás redirigido a la página de pago para completar tu transacción con tarjeta de crédito.</>
+                      <>Serás redirigido al formulario de tarjeta de crédito de Mercantil para completar la transacción.</>
+                    )}
+                    {paymentMethod === "bdv_pago_movil" && (
+                      <>Serás redirigido al Banco de Venezuela para procesar tu pago de forma segura y automatizada.</>
                     )}
                   </p>
                 </div>
@@ -471,9 +505,11 @@ export function CheckoutForm() {
             <div className="flex items-start gap-3 p-4 bg-blue-50 rounded-lg">
               <AlertCircle className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
               <p className="text-sm text-blue-800">
-                {paymentMethod 
-                  ? "Después de completar el pago, recibirás una confirmación automática."
-                  : "Selecciona un método de pago para continuar. El pago se procesará de forma segura a través del Banco Mercantil."}
+                {paymentMethod
+                  ? paymentMethod === "bdv_pago_movil"
+                    ? "Serás redirigido al Banco de Venezuela para autorizar tu pago de forma automatizada."
+                    : "Después de completar el pago, recibirás una confirmación automática."
+                  : "Selecciona un método de pago para continuar. Aceptamos Mercantil (C2P / Tarjeta) y Botón de Pago BDV."}
               </p>
             </div>
 

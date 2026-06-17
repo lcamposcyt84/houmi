@@ -64,12 +64,13 @@ export function ProductFilters({ categories }: ProductFiltersProps) {
             placeholder="Buscar productos..."
             defaultValue={currentSearch}
             onChange={(e) => {
-              // Debounce search
               const value = e.target.value;
-              const timeoutId = setTimeout(() => {
+              // Clear the existing timeout from the window object
+              if ((window as any).searchTimeout) clearTimeout((window as any).searchTimeout);
+              // Set a new timeout
+              (window as any).searchTimeout = setTimeout(() => {
                 updateParams("search", value);
               }, 500);
-              return () => clearTimeout(timeoutId);
             }}
             className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-200 bg-white text-brand-text placeholder:text-brand-text-muted focus:outline-none focus:ring-2 focus:ring-blue-900/20 focus:border-[#1B3A6D] transition-colors"
           />

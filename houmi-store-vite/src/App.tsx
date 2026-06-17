@@ -2,6 +2,9 @@ import { BrowserRouter, Routes, Route, Outlet } from 'react-router-dom'
 import { Suspense, lazy } from 'react'
 import { Header } from './components/layout/Header'
 import { Footer } from './components/layout/Footer'
+import { CartDrawer } from './components/layout/CartDrawer'
+import { useInactivityTimeout } from './hooks/useInactivityTimeout'
+import { AuthProvider } from './contexts/AuthContext'
 import AdminLayout from './app/admin/layout'
 
 // ==== STORE PAGES ====
@@ -12,6 +15,7 @@ const LoginPage = lazy(() => import('./app/(store)/login/page'))
 const RegisterPage = lazy(() => import('./app/(store)/register/page'))
 const CheckoutPage = lazy(() => import('./app/(store)/checkout/page'))
 const CheckoutPaymentPage = lazy(() => import('./app/(store)/checkout/payment/page'))
+const CheckoutSuccessPage = lazy(() => import('./app/(store)/checkout/success/page'))
 const ProductDetailPage = lazy(() => import('./app/(store)/products/[slug]/page'))
 
 // ==== INFO PAGES (Footer links) ====
@@ -48,21 +52,28 @@ const AdminBulkPricingPage = lazy(() => import('./app/admin/bulk-pricing/page'))
 const NotFoundPage = lazy(() => import('./app/not-found'))
 
 // Layout for the public store
-const StoreLayout = () => (
-  <div className="flex flex-col min-h-screen">
-    <Header />
-    <main className="flex-grow">
+const StoreLayout = () => {
+  useInactivityTimeout(30 * 60 * 1000); // 30 minutes
+
+  return (
+    <div className="flex flex-col min-h-screen relative">
+      <Header />
+      <main className="flex-grow">
       <Suspense fallback={<div className="p-8 text-center text-gray-500">Cargando...</div>}>
         <Outlet />
       </Suspense>
     </main>
     <Footer />
-  </div>
-)
+      {/* Global overlay elements */}
+      <CartDrawer />
+    </div>
+  )
+}
 
 export default function App() {
   return (
     <BrowserRouter>
+      <AuthProvider>
       <Routes>
         {/* === PUBLIC STORE ROUTES === */}
         <Route element={<StoreLayout />}>
@@ -74,6 +85,7 @@ export default function App() {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/checkout/payment" element={<CheckoutPaymentPage />} />
+          <Route path="/checkout/success" element={<CheckoutSuccessPage />} />
           {/* Account Routes (Also use store layout) */}
           <Route path="/account" element={<AccountPage />} />
           <Route path="/account/orders" element={<AccountOrdersPage />} />
@@ -127,6 +139,7 @@ export default function App() {
           </Suspense>
         } />
       </Routes>
+      </AuthProvider>
     </BrowserRouter>
   )
 }

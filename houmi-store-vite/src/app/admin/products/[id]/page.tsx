@@ -14,6 +14,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { Button, Input, Card } from "@/components/ui";
+import { phpFetch } from "@/lib/php-client";
 
 interface Product {
   id: string;
@@ -75,8 +76,8 @@ export default function EditProductPage() {
     async function fetchData() {
       try {
         const [productRes, categoriesRes] = await Promise.all([
-          fetch(`/api/admin/products/${productId}`),
-          fetch("/api/admin/categories"),
+          phpFetch(`admin/products/get_single.php?id=${productId}`),
+          phpFetch("admin/categories/get.php"),
         ]);
 
         if (!productRes.ok) {
@@ -116,7 +117,7 @@ export default function EditProductPage() {
     setSuccess("");
 
     try {
-      const response = await fetch(`/api/admin/products/${productId}`, {
+      const response = await phpFetch("admin/products/update.php", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -167,7 +168,7 @@ export default function EditProductPage() {
     formData.append("productId", productId);
 
     try {
-      const response = await fetch("/api/admin/upload", {
+      const response = await phpFetch("admin/upload.php", {
         method: "POST",
         body: formData,
       });
@@ -443,11 +444,23 @@ export default function EditProductPage() {
               variant="outline"
               className="w-full border-red-300 text-red-600 hover:bg-red-50"
               leftIcon={<Trash2 className="w-4 h-4" />}
-              onClick={() => {
-                if (
-                  confirm("¿Estás seguro de eliminar este producto?")
-                ) {
-                  // Delete logic here
+              onClick={async () => {
+                if (confirm("¿Estás seguro de eliminar este producto?")) {
+                  try {
+                    const res = await phpFetch("admin/products/delete.php", {
+                      method: "DELETE",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ id: productId }),
+                    });
+                    if (res.ok) {
+                      navigate("/admin/products");
+                    } else {
+                      const data = await res.json();
+                      alert(data.error || "No se pudo eliminar");
+                    }
+                  } catch (e) {
+                     alert("Error de conexión");
+                  }
                 }
               }}
             >

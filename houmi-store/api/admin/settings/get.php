@@ -32,6 +32,10 @@ try {
             // But since this is the admin panel, they might need to see/edit them.
             'mercantilApiUrl' => $settings['mercantilApiUrl'],
             'mercantilIdComercio' => $settings['mercantilIdComercio'],
+            'paymentGatewayUrl' => $settings['paymentGatewayUrl'],
+            'paymentMerchantId' => $settings['paymentMerchantId'],
+            'paymentIntegratorId' => $settings['paymentIntegratorId'],
+            'paymentEncryptionKey' => $settings['paymentEncryptionKey'],
             'updatedAt' => $settings['updatedAt']
         ]
     ]);

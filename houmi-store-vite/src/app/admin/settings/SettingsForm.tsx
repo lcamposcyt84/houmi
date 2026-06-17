@@ -24,6 +24,11 @@ export function SettingsForm() {
   const [mercantilMasterKey, setMercantilMasterKey] = useState("");
   const [mercantilIdComercio, setMercantilIdComercio] = useState("");
   const [mercantilWebhookUrl, setMercantilWebhookUrl] = useState("");
+  const [paymentGatewayUrl, setPaymentGatewayUrl] = useState("");
+  const [paymentMerchantId, setPaymentMerchantId] = useState("");
+  const [paymentIntegratorId, setPaymentIntegratorId] = useState("");
+  const [paymentEncryptionKey, setPaymentEncryptionKey] = useState("");
+  const [showPaymentEncryptionKey, setShowPaymentEncryptionKey] = useState(false);
   const [showMasterKey, setShowMasterKey] = useState(false);
   const [showApiSecret, setShowApiSecret] = useState(false);
   const [testResult, setTestResult] = useState<{ ok: boolean; message: string; detail?: string } | null>(null);
@@ -53,6 +58,10 @@ export function SettingsForm() {
         setMercantilMasterKey(s.mercantilMasterKey || "");
         setMercantilIdComercio(s.mercantilIdComercio || "");
         setMercantilWebhookUrl(s.mercantilWebhookUrl || "");
+        setPaymentGatewayUrl(s.paymentGatewayUrl || "");
+        setPaymentMerchantId(s.paymentMerchantId || "");
+        setPaymentIntegratorId(s.paymentIntegratorId || "");
+        setPaymentEncryptionKey(s.paymentEncryptionKey || "");
       }
     } catch (error) {
       console.error("Error fetching settings:", error);
@@ -82,6 +91,10 @@ export function SettingsForm() {
           mercantilMasterKey,
           mercantilIdComercio,
           mercantilWebhookUrl,
+          paymentGatewayUrl,
+          paymentMerchantId,
+          paymentIntegratorId,
+          paymentEncryptionKey,
         }),
       });
 
@@ -362,6 +375,62 @@ export function SettingsForm() {
                 {testResult.detail && <p className="mt-1 text-xs opacity-90">{testResult.detail}</p>}
               </div>
             )}
+          </div>
+        </div>
+      </Card>
+
+      {/* BDV Payment */}
+      <Card>
+        <div className="p-6 space-y-6">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{background:"#C8102E22"}}>
+              <DollarSign className="w-5 h-5" style={{color:"#C8102E"}} />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">
+                Banco de Venezuela (BDV)
+              </h2>
+              <p className="text-sm text-gray-500">BioPago BDV — Botón de pago directo</p>
+            </div>
+          </div>
+
+          <Input
+            label="Afiliado / Merchant ID"
+            value={paymentMerchantId}
+            onChange={(e) => setPaymentMerchantId(e.target.value)}
+            placeholder="72744004"
+            helperText="Número de afiliado que te proporciona el BDV al aprobar tu comercio."
+          />
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Contraseña / Client Secret
+            </label>
+            <div className="relative">
+              <input
+                type={showPaymentEncryptionKey ? "text" : "password"}
+                value={paymentEncryptionKey}
+                onChange={(e) => setPaymentEncryptionKey(e.target.value)}
+                placeholder="••••••••"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900/20 focus:border-[#1B3A6D]"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPaymentEncryptionKey(!showPaymentEncryptionKey)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-500 hover:text-gray-700"
+              >
+                {showPaymentEncryptionKey ? "Ocultar" : "Mostrar"}
+              </button>
+            </div>
+            <p className="mt-1 text-xs text-gray-500">
+              Contraseña de la API proporcionada por el BDV/Ex-Cle al afiliarte.
+            </p>
+          </div>
+
+          <div className="p-3 bg-red-50 border border-red-100 rounded-lg text-xs text-red-700">
+            <p className="font-semibold mb-1">Entorno de pruebas (Demo)</p>
+            <p>Afiliado: <span className="font-mono font-bold">72744004</span> &nbsp;|&nbsp; Contraseña: <span className="font-mono font-bold">Htnq1p3J</span></p>
+            <p className="mt-1 opacity-75">Reemplaza con tus credenciales reales cuando el banco las apruebe.</p>
           </div>
         </div>
       </Card>

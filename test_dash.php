@@ -1,0 +1,23 @@
+<?php
+require 'c:/xampp/htdocs/houmi-master/houmi-store/api/db.php';
+$totalProducts = $pdo->query('SELECT COUNT(id) FROM Product')->fetchColumn();
+$activeProducts = $pdo->query('SELECT COUNT(id) FROM Product WHERE isActive = 1')->fetchColumn();
+$totalCategories = $pdo->query('SELECT COUNT(id) FROM Category')->fetchColumn();
+$lowStock = $pdo->query('SELECT COUNT(id) FROM Inventory WHERE stock <= 5')->fetchColumn();
+$salesSumResult = $pdo->query("SELECT SUM(totalUsd) as totalUsd, SUM(totalVes) as totalVes FROM Sale WHERE status IN ('paid', 'completed', 'shipped')")->fetch();
+$totalSalesUsd = $salesSumResult['totalUsd'] ?? 0;
+$expensesResult = $pdo->query('SELECT SUM(amountUsd) as total FROM Expense')->fetchColumn();
+$totalExpensesUsd = $expensesResult ?? 0;
+$purchasesResult = $pdo->query('SELECT SUM(totalUsd) as total FROM Purchase')->fetchColumn();
+$totalPurchasesUsd = $purchasesResult ?? 0;
+$settingsStmt = $pdo->query("SELECT exchangeRateUsdToVes FROM Settings WHERE id = 'main'");
+$settingsRow = $settingsStmt->fetch();
+$exchangeRate = $settingsRow ? (float)$settingsRow['exchangeRateUsdToVes'] : 40.0;
+echo "Products: $totalProducts\n";
+echo "Active: $activeProducts\n";
+echo "Categories: $totalCategories\n";
+echo "Low Stock: $lowStock\n";
+echo "Sales: $totalSalesUsd\n";
+echo "Expenses: $totalExpensesUsd\n";
+echo "Purchases: $totalPurchasesUsd\n";
+echo "ExRate: $exchangeRate\n";

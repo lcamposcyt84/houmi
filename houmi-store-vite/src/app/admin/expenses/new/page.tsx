@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { phpFetch } from "@/lib/php-client";
 import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Save } from "lucide-react";
@@ -29,7 +30,7 @@ export default function NewExpensePage() {
   useEffect(() => {
     async function fetchSettings() {
       try {
-        const res = await fetch("/api/settings");
+        const res = await phpFetch("admin/settings/get.php");
         const data = await res.json();
         setExchangeRate(data.exchangeRateUsdToVes || 40);
       } catch (err) {
@@ -54,7 +55,7 @@ export default function NewExpensePage() {
     setError("");
 
     try {
-      const response = await fetch("/api/admin/expenses", {
+      const response = await phpFetch("admin/expenses/create.php", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

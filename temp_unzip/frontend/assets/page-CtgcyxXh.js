@@ -1,0 +1,1 @@
+import{t as e}from"./jsx-runtime-BnxRlLMJ.js";import{R as t}from"./index-DFCdmIgI.js";var n=e();function r(){return(0,n.jsx)(t,{to:`/admin/dashboard`,replace:!0})}export{r as default};

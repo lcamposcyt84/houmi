@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { LogIn, AlertCircle, Eye, EyeOff } from "lucide-react";
 import { Button, Input, Card } from "@/components/ui";
+import { phpFetch } from "@/lib/php-client";
 
 export function LoginForm() {
   const navigate = useNavigate();
@@ -19,9 +20,8 @@ export function LoginForm() {
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/admin/login", {
+      const response = await phpFetch("admin/login", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
 
@@ -35,6 +35,11 @@ export function LoginForm() {
         }
         setIsLoading(false);
         return;
+      }
+
+      // Guardar el token de administrador para las subsecuentes llamadas a la API
+      if (data.token) {
+        sessionStorage.setItem("houmi_admin_token", data.token);
       }
 
       navigate("/admin/dashboard");

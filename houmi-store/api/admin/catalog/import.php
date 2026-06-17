@@ -65,7 +65,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $header = array_map('strtoupper', array_map('trim', $rows[0]));
         $expected = ['CODIGO', 'NOMBRE', 'DESCRIPCION', 'CATEGORIA', 'STOCK', 'PRECIO_USD'];
-        
+        $colMap = [];
+        foreach ($expected as $col) {
+            $idx = array_search($col, $header);
+            if ($idx === false) {
+                http_response_code(400);
+                echo json_encode(['error' => "Columna '$col' no encontrada en el archivo. Columnas esperadas: " . implode(', ', $expected)]);
+                exit();
+            }
+            $colMap[$col] = $idx;
+        }
+
         $catStmt = $pdo->query('SELECT id, name, slug FROM Category');
         $categories = $catStmt->fetchAll();
         $catMap = [];
@@ -90,14 +100,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             for ($i = 1; $i < count($rows); $i++) {
                 $row = $rows[$i];
-                if (empty(trim($row[0]))) continue;
+                if (empty(trim($row[$colMap['CODIGO']] ?? ''))) continue;
 
-                $codigo = strtoupper(trim($row[0] ?? ''));
-                $nombre = trim($row[1] ?? $codigo);
-                $descripcion = trim($row[2] ?? '');
-                $categoriaName = strtolower(trim($row[3] ?? ''));
-                $stock = (int)($row[4] ?? 0);
-                $precioUsd = (float)($row[5] ?? 0);
+                $codigo = strtoupper(trim($row[$colMap['CODIGO']] ?? ''));
+                $nombre = trim($row[$colMap['NOMBRE']] ?? $codigo);
+                $descripcion = trim($row[$colMap['DESCRIPCION']] ?? '');
+                $categoriaName = strtolower(trim($row[$colMap['CATEGORIA']] ?? ''));
+                $stock = (int)($row[$colMap['STOCK']] ?? 0);
+                $precioUsd = (float)($row[$colMap['PRECIO_USD']] ?? 0);
 
                 if (empty($categoriaName) || !isset($catMap[$categoriaName])) {
                     $checkStmt = $pdo->prepare('SELECT id, categoryId FROM Product WHERE code = :code LIMIT 1');

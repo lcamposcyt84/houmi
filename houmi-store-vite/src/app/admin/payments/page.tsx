@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from "react";
+import { phpFetch } from "@/lib/php-client";
 import { Card } from "@/components/ui";
 import { RefreshCw, CheckCircle, XCircle, Clock, Search } from "lucide-react";
 import { formatDateTime } from "@/lib/utils";
@@ -35,7 +36,7 @@ export default function PaymentsPage() {
   const fetchNotifications = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch("/api/admin/payments");
+      const response = await phpFetch("admin/payments/get.php");
       if (response.ok) {
         const data = await response.json();
         setNotifications(data);

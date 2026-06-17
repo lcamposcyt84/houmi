@@ -1,7 +1,7 @@
-
 import { useState } from "react";
 import { Button, Input } from "@/components/ui";
 import { ArrowLeft, Loader2 } from "lucide-react";
+import { phpFetch } from "@/lib/php-client";
 
 interface C2PPaymentFormProps {
   orderNumber: string;
@@ -37,15 +37,11 @@ const venezuelanBanks = [
 ];
 
 const phoneCarriers = [
-  { code: "0412", name: "Movistar" },
+  { code: "0412", name: "Movistar / Digitel" },
   { code: "0414", name: "Movistar" },
-  { code: "0416", name: "Movistar" },
+  { code: "0416", name: "Movilnet" },
   { code: "0424", name: "Movistar" },
-  { code: "0426", name: "Movistar" },
-  { code: "0412", name: "Digitel" },
-  { code: "0416", name: "Digitel" },
-  { code: "0426", name: "Digitel" },
-  { code: "0424", name: "Movilnet" },
+  { code: "0426", name: "Movilnet" },
 ];
 
 export function C2PPaymentForm({
@@ -111,10 +107,10 @@ export function C2PPaymentForm({
     setIsSubmitting(true);
 
     try {
-      const response = await fetch("/api/payments/c2p", {
+      const response = await phpFetch("payments/mercantil_direct.php", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          methodType: "c2p",
           orderNumber,
           idType: formData.idType,
           idNumber: formData.idNumber,
@@ -145,32 +141,27 @@ export function C2PPaymentForm({
       <button
         type="button"
         onClick={onBack}
-        className="flex items-center gap-2 text-white/70 hover:text-white transition-colors text-sm"
+        className="flex items-center gap-2 text-[#0072CE] hover:underline transition-colors text-sm font-medium mb-6"
       >
         <ArrowLeft className="w-4 h-4" />
-        Volver
+        Volver a la selección de métodos
       </button>
 
-      <div>
-        <h2 className="text-xl font-bold text-white mb-2">Métodos de Pago</h2>
-        <p className="text-sm text-white/70">Completa los datos para pagar con Pago Móvil C2P</p>
-      </div>
-
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-5">
         {/* Cédula de Identidad */}
         <div>
-          <label className="block text-sm font-medium text-white mb-2">
-            Cédula de identidad
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Cédula de identidad *
           </label>
           <div className="flex gap-2">
             <select
               value={formData.idType}
               onChange={(e) => handleChange("idType", e.target.value)}
-              className="px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#F7C72C] focus:border-[#F7C72C]"
+              className="px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0072CE] focus:border-[#0072CE]"
             >
-              <option value="V" className="bg-[#1B3A6D]">V</option>
-              <option value="E" className="bg-[#1B3A6D]">E</option>
-              <option value="J" className="bg-[#1B3A6D]">J</option>
+              <option value="V">V</option>
+              <option value="E">E</option>
+              <option value="J">J</option>
             </select>
             <input
               type="text"
@@ -178,49 +169,49 @@ export function C2PPaymentForm({
               onChange={(e) => handleChange("idNumber", e.target.value.replace(/\D/g, ""))}
               placeholder="23534481"
               maxLength={9}
-              className="flex-1 px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-[#F7C72C] focus:border-[#F7C72C]"
+              className="flex-1 px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0072CE] focus:border-[#0072CE]"
             />
           </div>
           {errors.idNumber && (
-            <p className="mt-1 text-sm text-red-400">{errors.idNumber}</p>
+            <p className="mt-1 text-sm text-red-500">{errors.idNumber}</p>
           )}
         </div>
 
         {/* Banco */}
         <div>
-          <label className="block text-sm font-medium text-white mb-2">
-            Banco
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Banco *
           </label>
           <select
             value={formData.bank}
             onChange={(e) => handleChange("bank", e.target.value)}
-            className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#F7C72C] focus:border-[#F7C72C]"
+            className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0072CE] focus:border-[#0072CE]"
           >
-            <option value="" className="bg-[#1B3A6D]">Selecciona un banco</option>
+            <option value="">Selecciona un banco</option>
             {venezuelanBanks.map((bank) => (
-              <option key={bank.code} value={bank.code} className="bg-[#1B3A6D]">
+              <option key={bank.code} value={bank.code}>
                 {bank.name}
               </option>
             ))}
           </select>
           {errors.bank && (
-            <p className="mt-1 text-sm text-red-400">{errors.bank}</p>
+            <p className="mt-1 text-sm text-red-500">{errors.bank}</p>
           )}
         </div>
 
         {/* Teléfono */}
         <div>
-          <label className="block text-sm font-medium text-white mb-2">
-            Teléfono
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Teléfono *
           </label>
           <div className="flex gap-2">
             <select
               value={formData.phoneCarrier}
               onChange={(e) => handleChange("phoneCarrier", e.target.value)}
-              className="px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#F7C72C] focus:border-[#F7C72C]"
+              className="px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0072CE] focus:border-[#0072CE]"
             >
               {phoneCarriers.map((carrier) => (
-                <option key={carrier.code} value={carrier.code} className="bg-[#1B3A6D]">
+                <option key={carrier.code} value={carrier.code}>
                   {carrier.code}
                 </option>
               ))}
@@ -231,18 +222,18 @@ export function C2PPaymentForm({
               onChange={(e) => handleChange("phoneNumber", e.target.value.replace(/\D/g, ""))}
               placeholder="1234567"
               maxLength={7}
-              className="flex-1 px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-[#F7C72C] focus:border-[#F7C72C]"
+              className="flex-1 px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0072CE] focus:border-[#0072CE]"
             />
           </div>
           {errors.phoneNumber && (
-            <p className="mt-1 text-sm text-red-400">{errors.phoneNumber}</p>
+            <p className="mt-1 text-sm text-red-500">{errors.phoneNumber}</p>
           )}
         </div>
 
         {/* Código C2P */}
         <div>
-          <label className="block text-sm font-medium text-white mb-2">
-            Código C2P
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Clave de pago (Código C2P) *
           </label>
           <input
             type="text"
@@ -250,33 +241,35 @@ export function C2PPaymentForm({
             onChange={(e) => handleChange("c2pCode", e.target.value.replace(/\D/g, ""))}
             placeholder="12345678"
             maxLength={8}
-            className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-[#F7C72C] focus:border-[#F7C72C]"
+            className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0072CE] focus:border-[#0072CE]"
           />
           {errors.c2pCode && (
-            <p className="mt-1 text-sm text-red-400">{errors.c2pCode}</p>
+            <p className="mt-1 text-sm text-red-500">{errors.c2pCode}</p>
           )}
         </div>
 
         {errors.general && (
-          <div className="p-3 bg-red-500/20 border border-red-500/50 rounded-lg">
-            <p className="text-sm text-red-400">{errors.general}</p>
+          <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-sm text-red-600">{errors.general}</p>
           </div>
         )}
 
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="w-full py-4 bg-gradient-to-r from-[#F7C72C] to-[#FFD95A] text-[#1B3A6D] font-bold rounded-lg hover:from-[#FFD95A] hover:to-[#F7C72C] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-        >
-          {isSubmitting ? (
-            <>
-              <Loader2 className="w-5 h-5 animate-spin" />
-              Procesando...
-            </>
-          ) : (
-            "Pagar"
-          )}
-        </button>
+        <div className="pt-4 mt-8 border-t border-gray-100 flex justify-end">
+           <button
+            type="submit"
+            disabled={isSubmitting}
+            className="px-10 py-3 bg-[#0072CE] hover:bg-[#005ba3] text-white font-bold rounded-full transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Procesando
+              </>
+            ) : (
+              "Pagar"
+            )}
+           </button>
+        </div>
       </form>
     </div>
   );

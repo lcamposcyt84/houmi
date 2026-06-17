@@ -55,6 +55,10 @@ export interface Settings {
   mercantilMasterKey: string | null;
   mercantilIdComercio: string | null;
   mercantilWebhookUrl: string | null;
+  paymentGatewayUrl: string | null;
+  paymentMerchantId: string | null;
+  paymentIntegratorId: string | null;
+  paymentEncryptionKey: string | null;
   updatedAt: Date;
 }
 
