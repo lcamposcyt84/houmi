@@ -43,21 +43,27 @@ export function Footer() {
             {/* Social links */}
             <div className="flex items-center gap-3">
               <a
-                href="#"
-                className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-brand-accent hover:text-brand-primary transition-colors"
-                aria-label="Facebook"
-              >
-                <Facebook className="w-5 h-5" />
-              </a>
-              <a
-                href="#"
+                href="https://instagram.com/tiendashoumi"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-brand-accent hover:text-brand-primary transition-colors"
                 aria-label="Instagram"
               >
                 <Instagram className="w-5 h-5" />
               </a>
               <a
-                href="#"
+                href="https://facebook.com/tiendashoumi"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-brand-accent hover:text-brand-primary transition-colors"
+                aria-label="Facebook"
+              >
+                <Facebook className="w-5 h-5" />
+              </a>
+              <a
+                href="https://wa.me/584249480518"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-brand-accent hover:text-brand-primary transition-colors"
                 aria-label="WhatsApp"
               >
@@ -106,20 +112,22 @@ export function Footer() {
             <ul className="space-y-3">
               <li>
                 <a
-                  href="mailto:contacto@houmi.com"
+                  href="mailto:Tiendashoumico@gmail.com"
                   className="flex items-center gap-2 text-white/80 hover:text-brand-accent transition-colors text-sm"
                 >
                   <Mail className="w-4 h-4 shrink-0" />
-                  contacto@houmi.com
+                  Tiendashoumico@gmail.com
                 </a>
               </li>
               <li>
                 <a
-                  href="tel:+580000000000"
+                  href="https://wa.me/584249480518"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="flex items-center gap-2 text-white/80 hover:text-brand-accent transition-colors text-sm"
                 >
                   <Phone className="w-4 h-4 shrink-0" />
-                  +58 000 000 0000
+                  +58 0424 9480518
                 </a>
               </li>
               <li>
